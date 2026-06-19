@@ -4,6 +4,15 @@
 
 An AI-assisted tool for **Alcohol and Tobacco Tax and Trade Bureau (TTB)** label compliance review: confirm that an alcohol beverage label matches its COLA application — and that the mandatory Government Warning is exactly right — in seconds.
 
+## What it checks, and why
+
+For every product, a TTB reviewer gets two things: a **COLA application** (Certificate of Label Approval) stating what the bottle claims — brand, class/type, alcohol content, net contents, bottler, country — and an image of the **printed label**. Approving it means confirming:
+
+1. **The label matches the application** — the producer printed what they filed.
+2. **The Government Warning is exactly right** — `GOVERNMENT WARNING:` in capitals and bold (27 CFR §16.22), word-for-word the mandated statement (§16.21).
+
+By hand this is slow, repetitive, eye-strain work, and the warning's formatting is the easiest thing to miss. This app does one label in seconds and never glosses over it.
+
 ## Using the app
 
 The reviewer's workflow is two inputs and a button:
@@ -49,7 +58,23 @@ Switch to the **Batch** tab to screen many labels at once. Optionally upload a *
 
 ## How it works
 
-The vision model **reads** the label into structured fields; deterministic code then **decides** the verdict. Perception is AI; the pass/fail decision is plain, testable logic — so results are consistent and auditable, which a compliance decision needs. The model is swappable via `ANTHROPIC_MODEL` to balance accuracy against the ≤ 5-second target (default `claude-sonnet-4-6`). Full write-up in [docs/APPROACH.md](docs/APPROACH.md); security posture in [SECURITY.md](SECURITY.md).
+**Vision reads; deterministic code decides** — two stages, deliberately separated:
+
+1. **Read (AI).** Claude vision does perception *only*: it transcribes the label image into structured fields — brand, class/type, alcohol content, net contents, bottler, country, and the full Government Warning text. This is the stage that has to tolerate real-world photos: angle, glare, curved glass, low light.
+2. **Decide (plain code).** Deterministic TypeScript compares each field to the application and renders the verdict — fuzzy match on names, numeric compare on alcohol content, unit-normalized compare on volume, and an exact word-for-word + caps + bold check on the warning.
+
+The verdict never rides on the model "feeling" that two things match — it's testable logic, so the same input always yields the same result and every Pass / Review / Fail is explained field by field. That auditability is the point: a compliance decision has to be consistent and defensible, not a vibe. The model is swappable via `ANTHROPIC_MODEL` to trade accuracy against the ≤ 5-second target (default `claude-sonnet-4-6`). Full write-up in [docs/APPROACH.md](docs/APPROACH.md); security posture in [SECURITY.md](SECURITY.md).
+
+## How it meets the reviewers' needs
+
+| What reviewers needed | How the app delivers |
+|---|---|
+| **A verdict in ≤ 5 seconds** | One fast vision call (default `claude-sonnet-4-6`) with a cached structured-output schema, so there's no per-request compile cost. The model is swappable. |
+| **Usable by non-technical reviewers** | Two inputs and one button; plain-language, field-by-field results; one-click samples; a tooltip on every field. |
+| **Many labels at once** | A **Batch** tab screens a set of images (three in parallel), with an optional CSV of expected values matched by filename. |
+| **Brand names that are close but not identical** | Fuzzy, case/punctuation-insensitive matching — a near-miss becomes **Review** (human glance), not an automatic **Fail**. |
+| **The Government Warning checked rigorously** | A dedicated check: present, `GOVERNMENT WARNING:` in caps and bold (§16.22), word-for-word the mandated text (§16.21); deviations are pinpointed. |
+| **Imperfect, real-world photos** | Vision reads angled, glared, low-light phone photos — not just flat scans. |
 
 ## Run it yourself
 
