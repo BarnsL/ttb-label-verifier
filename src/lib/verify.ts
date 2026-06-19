@@ -110,6 +110,23 @@ function normUnits(s: string): string {
     .trim();
 }
 
+/** Parse a net-contents string to millilitres, preferring the metric measurement.
+ *  Handles dual-unit labels like "375 mL (12.7 fl. oz.)" and mixed units (L, fl oz). */
+function parseVolume(s: string): number | null {
+  const t = s
+    .toLowerCase()
+    .replace(/milliliters?|millilitres?/g, "ml")
+    .replace(/liters?|litres?/g, "l")
+    .replace(/fl\.?\s*oz\.?|fluid ounces?/g, "floz");
+  const ml = t.match(/(\d+(?:\.\d+)?)\s*ml\b/);
+  if (ml) return parseFloat(ml[1]);
+  const l = t.match(/(\d+(?:\.\d+)?)\s*l\b/);
+  if (l) return parseFloat(l[1]) * 1000;
+  const oz = t.match(/(\d+(?:\.\d+)?)\s*floz\b/);
+  if (oz) return parseFloat(oz[1]) * 29.5735;
+  return null;
+}
+
 function checkNetContents(expected: string | undefined, found: string): FieldResult {
   const field = "Net Contents";
   if (!expected || !expected.trim()) {
@@ -118,6 +135,17 @@ function checkNetContents(expected: string | undefined, found: string): FieldRes
   if (!found || !found.trim()) {
     return { field, status: "fail", expected, found: null, message: "Not found on the label." };
   }
+  // Compare by parsed volume so dual-unit labels ("375 mL (12.7 fl. oz.)") and
+  // mixed units (mL vs L vs fl oz) still match the application's metric value.
+  const ev = parseVolume(expected);
+  const fv = parseVolume(found);
+  if (ev != null && fv != null) {
+    if (Math.abs(ev - fv) <= Math.max(0.5, ev * 0.02)) {
+      return { field, status: "pass", expected, found, message: "Matches the application." };
+    }
+    return { field, status: "fail", expected, found, message: `Volume mismatch: application says ${expected}, label shows ${found}.` };
+  }
+  // Fallback: exact normalized string compare.
   if (normUnits(expected) === normUnits(found)) {
     return { field, status: "pass", expected, found, message: "Matches the application." };
   }
