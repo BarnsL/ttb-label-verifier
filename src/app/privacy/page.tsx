@@ -102,7 +102,7 @@ export default function PrivacyPage() {
         </P>
         <div className="my-3 rounded-lg border border-border bg-muted/40 px-5 py-4 text-sm text-muted-foreground">
           <p><strong className="text-foreground">TTB Label Verifier</strong></p>
-          <p>Operated by BarnsL</p>
+          <p>Operated by Barns Lau</p>
           <p>
             Contact:{" "}
             <a href={`mailto:${CONTACT_EMAIL}`} className="underline hover:text-foreground">
