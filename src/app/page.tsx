@@ -67,7 +67,8 @@ export default function Home() {
                 <ShieldCheck className="size-6" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">TTB Label Verification</h1>
+                <p className="text-[0.7rem] font-semibold uppercase tracking-wider text-violet-500">Alcohol &amp; Tobacco Tax and Trade Bureau</p>
+                <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Label Verification</h1>
                 <p className="mt-0.5 text-sm text-muted-foreground">Check an alcohol label against its application in seconds.</p>
               </div>
             </div>

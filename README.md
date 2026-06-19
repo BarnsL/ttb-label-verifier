@@ -1,61 +1,66 @@
-# TTB Label Verification
+# Alcohol Label Verification
 
 **▶ Live demo: https://ttb-label-verifier-barnslau.vercel.app**
 
-AI-assisted verification that an alcohol beverage label matches its COLA application — a standalone prototype for TTB label compliance review.
+An AI-assisted tool for **Alcohol and Tobacco Tax and Trade Bureau (TTB)** label compliance review: confirm that an alcohol beverage label matches its COLA application — and that the mandatory Government Warning is exactly right — in seconds.
 
-Upload a label image plus the application's claimed values; the app reads the label with AI vision and checks the brand name, class/type, alcohol content, net contents, and the mandatory Government Warning — returning a clear **Pass / Review / Fail** with plain-language reasons, in seconds. Batch mode handles many labels at once.
+## Using the app
 
-**Try it instantly** with the built-in **sample labels** (one click, no upload needed), and toggle **dark / light mode**. UI built on shadcn/ui. Reviewers can score the prototype at **`/grade`** — submitting emails the results to the candidate (via Resend).
+The reviewer's workflow is two inputs and a button:
 
-## Quick start
+1. **Enter the application's claimed values** — brand name, class/type, alcohol content, net contents (bottler and country of origin are optional). Leave any field blank to skip it.
+2. **Provide the label** — either:
+   - **Click a built-in sample** (top of the page) to load a label *and* its application in one click — no upload, no typing; or
+   - **Upload a label photo** (JPEG/PNG) — phone photos at an angle or with glare are fine.
+3. **Press "Verify label."** In a few seconds you get a verdict:
+   - 🟢 **Pass** — everything matches and the warning is compliant.
+   - 🟡 **Review** — a near-miss a human should glance at (e.g. a brand typo).
+   - 🔴 **Fail** — a real mismatch or a non-compliant warning, with the exact problem called out.
 
-```bash
-npm install
-cp .env.example .env.local     # then set ANTHROPIC_API_KEY
-npm run dev                    # http://localhost:3000
-```
+Each field shows *what the application said* vs. *what was read off the label*, in plain language. Hover any field label for a tooltip.
 
-`ANTHROPIC_API_KEY` is required. `ANTHROPIC_MODEL` is optional (default `claude-opus-4-8`).
+### Try the built-in samples
+Three labels are wired up so you can test instantly:
 
-## What it checks
+| Sample | Type | Expected result |
+|---|---|---|
+| 🥃 **Old Tom Distillery** | Bourbon | **Pass** |
+| 🍷 **Crimson Vale** | Cabernet Sauvignon | **Pass** |
+| 🍸 **Silver Birch** | Vodka | **Fail** — its "Government Warning" is in title case and not bold, which TTB rejects |
+
+### Batch
+Switch to the **Batch** tab to screen many labels at once. Optionally upload a **CSV** (`filename, brand, class, abv, net contents, bottler, country`) to supply each label's expected values, matched by filename; without one, each label is screened for the Government Warning and internal consistency. Results fill a table as they finish (three in parallel).
+
+### Other touches
+- **Dark / light** toggle (top-right).
+- **Docs** (book icon) opens this guide inside the app.
+- **`/grade`** — a reviewer rubric: score the six evaluation criteria, add comments, and submit; the results are emailed to the candidate.
+
+## What gets checked
 
 | Field | Rule |
 |-------|------|
-| **Brand name** | Case/punctuation-insensitive — `"STONE'S THROW"` matches `"Stone's Throw"`. Close-but-not-exact is flagged **Review**, not failed. |
+| **Brand name** | Case/punctuation-insensitive — `"STONE'S THROW"` matches `"Stone's Throw"`. Close-but-not-exact is **Review**, not failed. |
 | **Class / type** | Same fuzzy match. |
 | **Alcohol content** | Parsed to a number; any difference vs. the application is flagged. |
 | **Net contents** | Unit-normalized (`750 mL` = `750ML` = `750 milliliters`). |
-| **Bottler name/address** | Fuzzy match against the application (optional field). |
-| **Country of origin** | Fuzzy match (optional; mainly for imports). |
-| **Government Warning** | Present, with `GOVERNMENT WARNING:` in **capital letters** and **bold** (§16.22), and matching the mandatory statement **word-for-word** (27 CFR §16.21). Deviations are pinpointed. |
+| **Bottler name/address**, **Country of origin** | Fuzzy match (optional fields). |
+| **Government Warning** | Must be present, with `GOVERNMENT WARNING:` in **capital letters and bold** (27 CFR §16.22), matching the mandatory statement **word-for-word** (27 CFR §16.21). Deviations are pinpointed. |
 
 ## How it works
 
-The vision model **reads** the label into structured fields; deterministic code then **decides** the verdict. Perception is AI; the pass/fail decision is plain, testable logic — so results are consistent and auditable, which is what a compliance decision needs. Details in [docs/APPROACH.md](docs/APPROACH.md).
+The vision model **reads** the label into structured fields; deterministic code then **decides** the verdict. Perception is AI; the pass/fail decision is plain, testable logic — so results are consistent and auditable, which a compliance decision needs. The model is swappable via `ANTHROPIC_MODEL` to balance accuracy against the ≤ 5-second target (default `claude-sonnet-4-6`). Full write-up in [docs/APPROACH.md](docs/APPROACH.md); security posture in [SECURITY.md](SECURITY.md).
 
-## Batch mode
+## Run it yourself
 
-Upload many images at once. Optionally add a **CSV** (`filename, brand, class, abv, net contents`) to supply each label's expected values, matched by filename. Without a CSV, each label is screened for the Government Warning and internal field consistency. Results render in a table as they complete (3 in parallel).
+```bash
+npm install
+cp .env.example .env.local     # set ANTHROPIC_API_KEY (required); RESEND_API_KEY optional, for /grade
+npm run dev                    # http://localhost:3000
+```
 
-## The 5-second target
+To deploy: push to GitHub, import the repo into Vercel, and set `ANTHROPIC_API_KEY` (plus optionally `ANTHROPIC_MODEL` and `RESEND_API_KEY`) as project environment variables. Standard Next.js — no other config.
 
-`ANTHROPIC_MODEL` swaps the vision model with no code change, to balance accuracy vs. the ≤5s requirement on your infrastructure:
+## Built with
 
-- `claude-sonnet-4-6` (default) — ~4.5–5.0s, accurate; meets the ~5-second target
-- `claude-opus-4-8` — most accurate on poor images (~5.2s)
-- `claude-haiku-4-5` — fastest, lowest cost
-
-The result footer shows the actual elapsed time and flags anything over 5s. (The very first request also pays a one-time schema compile of a few seconds, cached for 24h.)
-
-## Test labels
-
-A sample label is in [`public/sample-label.svg`](public/sample-label.svg) — open it in a browser and screenshot it to PNG to try the app. You can also AI-generate labels (the assessment suggests this) or photograph real bottles.
-
-## Deploy
-
-Push to GitHub, import into **Vercel**, and set `ANTHROPIC_API_KEY` (and optionally `ANTHROPIC_MODEL`) as project environment variables. Standard Next.js; the `/api/verify` function has a 30-second ceiling.
-
-## Tech
-
-Next.js 16 (App Router) · TypeScript · Tailwind CSS · Anthropic Claude vision (structured outputs) · Vercel.
+Next.js 16 · TypeScript · Tailwind / shadcn (Base UI) · Anthropic Claude vision (structured outputs) · Resend · Vercel.

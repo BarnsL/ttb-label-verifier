@@ -8,7 +8,7 @@ const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "TTB Label Verification",
+  title: "Alcohol Label Verification — Tax and Trade Bureau (TTB)",
   description: "AI-assisted verification that an alcohol beverage label matches its COLA application.",
 };
 
