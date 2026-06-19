@@ -128,7 +128,7 @@ export async function extractLabel(
   model: string = MODEL,
 ): Promise<ExtractedLabel> {
   const response = await client.messages.create({
-    model: MODEL,
+    model,
     max_tokens: 1024,
     // Perception task, not reasoning — disable thinking to stay within the 5s budget.
     thinking: { type: "disabled" },

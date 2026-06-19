@@ -56,11 +56,22 @@ const ALLOWED_MEDIA = new Set<ImageMediaType>([
   "image/webp",
 ]);
 
+/**
+ * Reader models the UI is allowed to request, mapped to full Claude model ids.
+ * Any other value falls back to the env-configured default (MODEL). This keeps
+ * arbitrary, client-controlled model strings from reaching the Anthropic API.
+ */
+const MODEL_CHOICES: Record<string, string> = {
+  sonnet: "claude-sonnet-4-6",
+  haiku: "claude-haiku-4-5",
+};
+
 /** Shape of the JSON request body. */
 interface Body {
   imageBase64?: string;
   mediaType?: string;
   expected?: ExpectedFields;
+  model?: string;
 }
 
 /**
@@ -108,6 +119,9 @@ export async function POST(req: Request): Promise<Response> {
 
   const { imageBase64, mediaType = "image/jpeg", expected = {} } = body;
 
+  // Resolve the requested reader to an allowlisted model id; default to MODEL.
+  const model = (body.model && MODEL_CHOICES[body.model]) || MODEL;
+
   // Validate required fields.
   if (!imageBase64) {
     return json({ error: "Missing 'imageBase64'." }, 400);
@@ -130,11 +144,11 @@ export async function POST(req: Request): Promise<Response> {
 
   try {
     // Stage 1: Vision extraction — what does the label say?
-    const extracted = await extractLabel(imageBase64, mediaType as ImageMediaType);
+    const extracted = await extractLabel(imageBase64, mediaType as ImageMediaType, model);
 
     // Stage 2: Deterministic verification — does it match the application?
     const result = verifyLabel(expected, extracted, {
-      model: MODEL,
+      model,
       elapsedMs: Date.now() - started,
     });
 

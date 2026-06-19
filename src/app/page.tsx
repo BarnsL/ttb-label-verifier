@@ -31,6 +31,8 @@ type ExpectedKey = (typeof FIELDS)[number]["key"];
 type Expected = Record<ExpectedKey, string>;
 const EMPTY: Expected = { brandName: "", classType: "", alcoholContent: "", netContents: "", bottlerInfo: "", countryOfOrigin: "" };
 
+type ModelChoice = "sonnet" | "haiku";
+
 const SAMPLES: { id: string; name: string; type: string; src: string; hint: string; expect: Partial<Expected> }[] = [
   { id: "bourbon", name: "Old Tom Distillery", type: "Bourbon", src: "/samples/bourbon.png", hint: "Compliant → Pass",
     expect: { brandName: "OLD TOM DISTILLERY", classType: "Kentucky Straight Bourbon Whiskey", alcoholContent: "45% Alc./Vol. (90 Proof)", netContents: "750 mL", bottlerInfo: "Old Tom Distillery Co., Bardstown, Kentucky" } },
@@ -42,11 +44,11 @@ const SAMPLES: { id: string; name: string; type: string; src: string; hint: stri
     expect: { brandName: "Sho Chiku Bai", alcoholContent: "15% Alc./Vol.", netContents: "375 mL" } },
 ];
 
-async function verifyImage(img: PreparedImage, expected: Partial<Expected>): Promise<VerificationResult> {
+async function verifyImage(img: PreparedImage, expected: Partial<Expected>, model: ModelChoice): Promise<VerificationResult> {
   const res = await fetch("/api/verify", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ imageBase64: img.base64, mediaType: img.mediaType, expected }),
+    body: JSON.stringify({ imageBase64: img.base64, mediaType: img.mediaType, expected, model }),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.detail || data.error || "Verification failed");
@@ -54,6 +56,7 @@ async function verifyImage(img: PreparedImage, expected: Partial<Expected>): Pro
 }
 
 export default function Home() {
+  const [model, setModel] = useState<ModelChoice>("sonnet");
   return (
     <TooltipProvider>
       <main className="relative min-h-screen overflow-hidden">
@@ -84,12 +87,15 @@ export default function Home() {
           </header>
 
           <Tabs defaultValue="single">
-            <TabsList className="mb-6">
-              <TabsTrigger value="single">Single label</TabsTrigger>
-              <TabsTrigger value="batch">Batch</TabsTrigger>
-            </TabsList>
-            <TabsContent value="single"><SingleMode /></TabsContent>
-            <TabsContent value="batch"><BatchMode /></TabsContent>
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+              <TabsList>
+                <TabsTrigger value="single">Single label</TabsTrigger>
+                <TabsTrigger value="batch">Batch</TabsTrigger>
+              </TabsList>
+              <ModelToggle model={model} setModel={setModel} />
+            </div>
+            <TabsContent value="single"><SingleMode model={model} /></TabsContent>
+            <TabsContent value="batch"><BatchMode model={model} /></TabsContent>
           </Tabs>
 
           <footer className="mt-12 flex flex-col items-center justify-between gap-3 border-t pt-6 text-xs text-muted-foreground sm:flex-row">
@@ -105,7 +111,38 @@ export default function Home() {
   );
 }
 
-function SingleMode() {
+function ModelToggle({ model, setModel }: { model: ModelChoice; setModel: (m: ModelChoice) => void }) {
+  const opts: { id: ModelChoice; label: string; tip: string }[] = [
+    { id: "sonnet", label: "Sonnet", tip: "Claude Sonnet — most accurate; reads low-res, real-world photos. Default." },
+    { id: "haiku", label: "Haiku", tip: "Claude Haiku — fastest & cheapest; great on clean labels, can miss tiny text on poor photos." },
+  ];
+  return (
+    <div className="inline-flex items-center gap-2">
+      <span className="text-xs font-medium text-muted-foreground">Reader</span>
+      <div className="inline-flex rounded-lg border bg-card p-0.5 shadow-sm">
+        {opts.map((o) => (
+          <Tooltip key={o.id}>
+            <TooltipTrigger
+              onClick={() => setModel(o.id)}
+              aria-pressed={model === o.id}
+              className={cn(
+                "rounded-md px-3 py-1 text-xs font-semibold transition",
+                model === o.id
+                  ? "bg-gradient-to-br from-violet-500 to-fuchsia-600 text-white shadow"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {o.label}
+            </TooltipTrigger>
+            <TooltipContent>{o.tip}</TooltipContent>
+          </Tooltip>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SingleMode({ model }: { model: ModelChoice }) {
   const [expected, setExpected] = useState<Expected>(EMPTY);
   const [image, setImage] = useState<PreparedImage | null>(null);
   const [result, setResult] = useState<VerificationResult | null>(null);
@@ -114,7 +151,7 @@ function SingleMode() {
 
   async function runVerify(img: PreparedImage, exp: Expected) {
     setBusy(true); setError(""); setResult(null);
-    try { setResult(await verifyImage(img, exp)); }
+    try { setResult(await verifyImage(img, exp, model)); }
     catch (e) { setError(e instanceof Error ? e.message : String(e)); }
     finally { setBusy(false); }
   }
@@ -313,7 +350,7 @@ function parseCsv(text: string): Record<string, Partial<Expected>> {
   return out;
 }
 
-function BatchMode() {
+function BatchMode({ model }: { model: ModelChoice }) {
   const [rows, setRows] = useState<Row[]>([]);
   const [csv, setCsv] = useState<Record<string, Partial<Expected>>>({});
   const [busy, setBusy] = useState(false);
@@ -339,7 +376,7 @@ function BatchMode() {
         const i = next++;
         setRows((prev) => prev.map((r, j) => (j === i ? { ...r, status: "running" } : r)));
         try {
-          const res = await verifyImage(snap[i], csv[snap[i].name] ?? {});
+          const res = await verifyImage(snap[i], csv[snap[i].name] ?? {}, model);
           setRows((prev) => prev.map((r, j) => (j === i ? { ...r, status: "done", result: res } : r)));
         } catch (e) {
           setRows((prev) => prev.map((r, j) => (j === i ? { ...r, status: "error", error: e instanceof Error ? e.message : String(e) } : r)));
