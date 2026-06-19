@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { Upload } from "lucide-react";
 import type { VerificationResult, FieldResult, FieldStatus } from "@/lib/types";
 import { prepareImage, type PreparedImage } from "@/lib/image";
@@ -66,6 +67,9 @@ export default function Home() {
               <p className="mt-1 text-muted-foreground">Check an alcohol label against its application in seconds.</p>
             </div>
             <div className="flex items-center gap-2">
+              <Link href="/grade" title="Open the reviewer grading rubric" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
+                Grade
+              </Link>
               <DocsDialog />
               <ThemeToggle />
             </div>
@@ -262,14 +266,48 @@ function StatusBadge({ status }: { status: FieldStatus | "review" }) {
 
 type Row = { img: PreparedImage; status: "pending" | "running" | "done" | "error"; result?: VerificationResult; error?: string };
 
+const CSV_MAP: Record<string, string> = {
+  filename: "filename", file: "filename", brand: "brandName", "brand name": "brandName", brandname: "brandName",
+  class: "classType", "class/type": "classType", type: "classType", abv: "alcoholContent", alcohol: "alcoholContent",
+  "alcohol content": "alcoholContent", net: "netContents", "net contents": "netContents", netcontents: "netContents", contents: "netContents",
+  bottler: "bottlerInfo", "bottler name": "bottlerInfo", producer: "bottlerInfo",
+  country: "countryOfOrigin", "country of origin": "countryOfOrigin", origin: "countryOfOrigin",
+};
+
+function parseCsv(text: string): Record<string, Partial<Expected>> {
+  const lines = text.split(/\r?\n/).filter((l) => l.trim());
+  if (!lines.length) return {};
+  const headers = lines[0].split(",").map((h) => h.trim().toLowerCase());
+  const out: Record<string, Partial<Expected>> = {};
+  for (let i = 1; i < lines.length; i++) {
+    const cells = lines[i].split(",").map((c) => c.trim());
+    const row: Partial<Expected> = {};
+    let fname = "";
+    headers.forEach((h, j) => {
+      const key = CSV_MAP[h];
+      if (key === "filename") fname = cells[j];
+      else if (key) (row as Record<string, string>)[key] = cells[j] ?? "";
+    });
+    if (fname) out[fname] = row;
+  }
+  return out;
+}
+
 function BatchMode() {
   const [rows, setRows] = useState<Row[]>([]);
+  const [csv, setCsv] = useState<Record<string, Partial<Expected>>>({});
   const [busy, setBusy] = useState(false);
 
   async function pick(files: FileList | null) {
     if (!files?.length) return;
     const prepared = await Promise.all([...files].map((f) => prepareImage(f)));
     setRows(prepared.map((img) => ({ img, status: "pending" })));
+  }
+  function loadCsv(file?: File) {
+    if (!file) return;
+    const r = new FileReader();
+    r.onload = () => setCsv(parseCsv(String(r.result)));
+    r.readAsText(file);
   }
   async function run() {
     setBusy(true);
@@ -281,7 +319,7 @@ function BatchMode() {
         const i = next++;
         setRows((prev) => prev.map((r, j) => (j === i ? { ...r, status: "running" } : r)));
         try {
-          const res = await verifyImage(snap[i], {});
+          const res = await verifyImage(snap[i], csv[snap[i].name] ?? {});
           setRows((prev) => prev.map((r, j) => (j === i ? { ...r, status: "done", result: res } : r)));
         } catch (e) {
           setRows((prev) => prev.map((r, j) => (j === i ? { ...r, status: "error", error: e instanceof Error ? e.message : String(e) } : r)));
@@ -298,15 +336,25 @@ function BatchMode() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Batch screening</CardTitle>
-          <CardDescription>Upload many labels; each is screened for the Government Warning and field consistency.</CardDescription>
+          <CardDescription>Upload many labels; add an optional CSV of expected values, matched by filename.</CardDescription>
         </CardHeader>
         <CardContent>
-          <label title="Select multiple label images to screen at once" className="inline-flex cursor-pointer items-center gap-2 rounded-md bg-primary px-4 py-2.5 font-medium text-primary-foreground transition hover:bg-primary/90">
-            <Upload className="size-4" />
-            <input type="file" accept="image/*" multiple className="sr-only" onChange={(e) => pick(e.target.files)} />
-            Choose label images
-          </label>
-          <p className="mt-2 text-sm text-muted-foreground">{rows.length ? `${rows.length} image(s) ready` : "No images yet."}</p>
+          <div className="flex flex-wrap gap-3">
+            <label title="Select multiple label images to screen at once" className="inline-flex cursor-pointer items-center gap-2 rounded-md bg-primary px-4 py-2.5 font-medium text-primary-foreground transition hover:bg-primary/90">
+              <Upload className="size-4" />
+              <input type="file" accept="image/*" multiple className="sr-only" onChange={(e) => pick(e.target.files)} />
+              Choose label images
+            </label>
+            <label title="Optional CSV of expected values, matched to each image by filename" className={cn(buttonVariants({ variant: "outline" }), "cursor-pointer")}>
+              <input type="file" accept=".csv,text/csv" className="sr-only" onChange={(e) => loadCsv(e.target.files?.[0])} />
+              Add expected values (CSV)
+            </label>
+          </div>
+          <p className="mt-2 text-sm text-muted-foreground">
+            {rows.length ? `${rows.length} image(s) ready` : "No images yet."}
+            {Object.keys(csv).length ? ` · ${Object.keys(csv).length} CSV row(s) matched by filename` : ""}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">CSV columns: filename, brand, class, abv, net contents, bottler, country. Without a CSV, each label is screened for the Government Warning + consistency.</p>
         </CardContent>
       </Card>
       {rows.length > 0 && (
@@ -314,7 +362,7 @@ function BatchMode() {
           <TooltipTrigger className={cn(buttonVariants({ size: "lg" }), "w-full")} disabled={busy} onClick={run}>
             {busy ? `Checking… ${done}/${rows.length}` : `Verify all ${rows.length}`}
           </TooltipTrigger>
-          <TooltipContent>Run the warning + consistency check on every image (3 in parallel)</TooltipContent>
+          <TooltipContent>Run the check on every image (3 in parallel) — using CSV expected values where matched</TooltipContent>
         </Tooltip>
       )}
       {rows.length > 0 && (
@@ -322,16 +370,20 @@ function BatchMode() {
           <CardContent className="p-0">
             <table className="w-full text-left text-sm">
               <thead className="border-b text-xs uppercase text-muted-foreground">
-                <tr><th className="px-4 py-3">Label</th><th className="px-4 py-3">Result</th><th className="px-4 py-3">Gov. Warning</th></tr>
+                <tr><th className="px-4 py-3">Label</th><th className="px-4 py-3">Result</th><th className="px-4 py-3">Gov. Warning</th><th className="px-4 py-3">Brand</th></tr>
               </thead>
               <tbody className="divide-y">
-                {rows.map((r, i) => (
-                  <tr key={i}>
-                    <td className="max-w-[16rem] truncate px-4 py-3 font-medium">{r.img.name}</td>
-                    <td className="px-4 py-3">{r.status === "running" ? "…" : r.status === "pending" ? "—" : r.error ? <span className="text-destructive">Error</span> : r.result && <StatusBadge status={r.result.overall} />}</td>
-                    <td className="px-4 py-3">{r.result ? <StatusBadge status={r.result.warning.status} /> : "—"}</td>
-                  </tr>
-                ))}
+                {rows.map((r, i) => {
+                  const brand = r.result?.fields.find((f) => f.field === "Brand Name");
+                  return (
+                    <tr key={i}>
+                      <td className="max-w-[14rem] truncate px-4 py-3 font-medium">{r.img.name}</td>
+                      <td className="px-4 py-3">{r.status === "running" ? "…" : r.status === "pending" ? "—" : r.error ? <span className="text-destructive">Error</span> : r.result && <StatusBadge status={r.result.overall} />}</td>
+                      <td className="px-4 py-3">{r.result ? <StatusBadge status={r.result.warning.status} /> : "—"}</td>
+                      <td className="px-4 py-3">{brand && brand.status !== "skipped" ? <StatusBadge status={brand.status} /> : "—"}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </CardContent>
