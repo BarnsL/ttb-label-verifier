@@ -6,6 +6,8 @@ AI-assisted verification that an alcohol beverage label matches its COLA applica
 
 Upload a label image plus the application's claimed values; the app reads the label with AI vision and checks the brand name, class/type, alcohol content, net contents, and the mandatory Government Warning — returning a clear **Pass / Review / Fail** with plain-language reasons, in seconds. Batch mode handles many labels at once.
 
+**Try it instantly** with the built-in **sample labels** (one click, no upload needed), and toggle **dark / light mode**. UI built on shadcn/ui.
+
 ## Quick start
 
 ```bash

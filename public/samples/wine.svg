@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800" font-family="Georgia, 'Times New Roman', serif">
+  <rect width="600" height="800" fill="#faf6f4"/>
+  <rect x="22" y="22" width="556" height="756" fill="none" stroke="#5e1a2e" stroke-width="3"/>
+  <text x="300" y="150" text-anchor="middle" font-size="50" letter-spacing="4" fill="#5e1a2e" font-weight="bold">CRIMSON VALE</text>
+  <text x="300" y="196" text-anchor="middle" font-size="18" letter-spacing="8" fill="#8a3a4e">— NAPA VALLEY —</text>
+  <line x1="160" y1="232" x2="440" y2="232" stroke="#8a3a4e" stroke-width="1.5"/>
+  <text x="300" y="282" text-anchor="middle" font-size="26" fill="#3a2530" font-style="italic">Cabernet Sauvignon</text>
+  <text x="300" y="316" text-anchor="middle" font-size="17" fill="#6a4550">2021 Vintage</text>
+  <text x="300" y="384" text-anchor="middle" font-size="18" fill="#3a2530">Produced and bottled by</text>
+  <text x="300" y="409" text-anchor="middle" font-size="18" fill="#3a2530">Crimson Vale Winery, Napa, California</text>
+  <text x="300" y="474" text-anchor="middle" font-size="24" fill="#3a2530" font-weight="bold">13.5% Alc./Vol.</text>
+  <text x="300" y="508" text-anchor="middle" font-size="22" fill="#3a2530">750 mL</text>
+  <rect x="70" y="562" width="460" height="184" fill="none" stroke="#3a2530" stroke-width="1"/>
+  <text x="90" y="602" font-size="14" fill="#1a1a1a" font-weight="bold" font-family="Arial, sans-serif">GOVERNMENT WARNING:</text>
+  <text x="90" y="626" font-size="13" fill="#1a1a1a" font-family="Arial, sans-serif">(1) According to the Surgeon General, women should not drink</text>
+  <text x="90" y="644" font-size="13" fill="#1a1a1a" font-family="Arial, sans-serif">alcoholic beverages during pregnancy because of the risk of</text>
+  <text x="90" y="662" font-size="13" fill="#1a1a1a" font-family="Arial, sans-serif">birth defects. (2) Consumption of alcoholic beverages impairs</text>
+  <text x="90" y="680" font-size="13" fill="#1a1a1a" font-family="Arial, sans-serif">your ability to drive a car or operate machinery, and may</text>
+  <text x="90" y="698" font-size="13" fill="#1a1a1a" font-family="Arial, sans-serif">cause health problems.</text>
+</svg>

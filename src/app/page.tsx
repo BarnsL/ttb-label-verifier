@@ -1,8 +1,17 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
+import { Upload } from "lucide-react";
 import type { VerificationResult, FieldResult, FieldStatus } from "@/lib/types";
 import { prepareImage, type PreparedImage } from "@/lib/image";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const FIELDS = [
   { key: "brandName", label: "Brand name", placeholder: "e.g. OLD TOM DISTILLERY" },
@@ -17,16 +26,14 @@ type ExpectedKey = (typeof FIELDS)[number]["key"];
 type Expected = Record<ExpectedKey, string>;
 const EMPTY: Expected = { brandName: "", classType: "", alcoholContent: "", netContents: "", bottlerInfo: "", countryOfOrigin: "" };
 
-type Style = { chip: string; text: string; icon: string; word: string };
-const STATUS: Record<string, Style> = {
-  pass: { chip: "bg-green-100 text-green-800 border-green-300", text: "text-green-800", icon: "✓", word: "Pass" },
-  review: { chip: "bg-amber-100 text-amber-900 border-amber-300", text: "text-amber-900", icon: "!", word: "Review" },
-  warn: { chip: "bg-amber-100 text-amber-900 border-amber-300", text: "text-amber-900", icon: "!", word: "Review" },
-  fail: { chip: "bg-red-100 text-red-800 border-red-300", text: "text-red-800", icon: "✕", word: "Fail" },
-  missing: { chip: "bg-red-100 text-red-800 border-red-300", text: "text-red-800", icon: "✕", word: "Missing" },
-  skipped: { chip: "bg-zinc-100 text-zinc-600 border-zinc-300", text: "text-zinc-600", icon: "–", word: "Not checked" },
-};
-const styleFor = (s: FieldStatus | "review") => STATUS[s] ?? STATUS.skipped;
+const SAMPLES: { id: string; name: string; type: string; src: string; hint: string; expect: Partial<Expected> }[] = [
+  { id: "bourbon", name: "Old Tom Distillery", type: "Bourbon", src: "/samples/bourbon.png", hint: "Compliant → Pass",
+    expect: { brandName: "OLD TOM DISTILLERY", classType: "Kentucky Straight Bourbon Whiskey", alcoholContent: "45% Alc./Vol. (90 Proof)", netContents: "750 mL", bottlerInfo: "Old Tom Distillery Co., Bardstown, Kentucky" } },
+  { id: "wine", name: "Crimson Vale", type: "Cabernet Sauvignon", src: "/samples/wine.png", hint: "Compliant → Pass",
+    expect: { brandName: "CRIMSON VALE", classType: "Cabernet Sauvignon", alcoholContent: "13.5% Alc./Vol.", netContents: "750 mL", bottlerInfo: "Crimson Vale Winery, Napa, California" } },
+  { id: "vodka", name: "Silver Birch", type: "Vodka", src: "/samples/vodka.png", hint: "Warning not ALL-CAPS → Fail",
+    expect: { brandName: "SILVER BIRCH", classType: "Vodka", alcoholContent: "40% Alc./Vol. (80 Proof)", netContents: "750 mL", bottlerInfo: "Silver Birch Spirits, Austin, Texas" } },
+];
 
 async function verifyImage(img: PreparedImage, expected: Partial<Expected>): Promise<VerificationResult> {
   const res = await fetch("/api/verify", {
@@ -40,32 +47,24 @@ async function verifyImage(img: PreparedImage, expected: Partial<Expected>): Pro
 }
 
 export default function Home() {
-  const [mode, setMode] = useState<"single" | "batch">("single");
   return (
-    <main className="min-h-screen bg-zinc-50 text-zinc-900">
+    <main className="min-h-screen">
       <div className="mx-auto max-w-3xl px-5 py-8">
-        <header className="mb-6">
-          <h1 className="text-3xl font-bold tracking-tight">TTB Label Verification</h1>
-          <p className="mt-1 text-lg text-zinc-600">
-            Check an alcohol label against its application in seconds.
-          </p>
+        <header className="mb-6 flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">TTB Label Verification</h1>
+            <p className="mt-1 text-muted-foreground">Check an alcohol label against its application in seconds.</p>
+          </div>
+          <ThemeToggle />
         </header>
-
-        <div className="mb-6 inline-flex rounded-lg border border-zinc-300 bg-white p-1" role="tablist" aria-label="Mode">
-          {(["single", "batch"] as const).map((m) => (
-            <button
-              key={m}
-              role="tab"
-              aria-selected={mode === m}
-              onClick={() => setMode(m)}
-              className={`rounded-md px-5 py-2 text-base font-medium transition ${mode === m ? "bg-blue-700 text-white" : "text-zinc-700 hover:bg-zinc-100"}`}
-            >
-              {m === "single" ? "Single label" : "Batch"}
-            </button>
-          ))}
-        </div>
-
-        {mode === "single" ? <SingleMode /> : <BatchMode />}
+        <Tabs defaultValue="single">
+          <TabsList className="mb-6">
+            <TabsTrigger value="single">Single label</TabsTrigger>
+            <TabsTrigger value="batch">Batch</TabsTrigger>
+          </TabsList>
+          <TabsContent value="single"><SingleMode /></TabsContent>
+          <TabsContent value="batch"><BatchMode /></TabsContent>
+        </Tabs>
       </div>
     </main>
   );
@@ -78,193 +77,165 @@ function SingleMode() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
+  async function runVerify(img: PreparedImage, exp: Expected) {
+    setBusy(true); setError(""); setResult(null);
+    try { setResult(await verifyImage(img, exp)); }
+    catch (e) { setError(e instanceof Error ? e.message : String(e)); }
+    finally { setBusy(false); }
+  }
   async function pick(file?: File) {
     if (!file) return;
-    setResult(null);
-    setError("");
-    try {
-      setImage(await prepareImage(file));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-    }
+    setResult(null); setError("");
+    try { setImage(await prepareImage(file)); } catch (e) { setError(String(e)); }
   }
-
-  async function verify() {
-    if (!image) return;
-    setBusy(true);
-    setError("");
-    setResult(null);
+  async function loadSample(s: (typeof SAMPLES)[number]) {
+    setError(""); setResult(null);
     try {
-      setResult(await verifyImage(image, expected));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setBusy(false);
-    }
+      const blob = await (await fetch(s.src)).blob();
+      const img = await prepareImage(new File([blob], s.id + ".png", { type: "image/png" }));
+      const exp = { ...EMPTY, ...s.expect };
+      setImage(img); setExpected(exp);
+      await runVerify(img, exp);
+    } catch (e) { setError(e instanceof Error ? e.message : String(e)); }
   }
 
   return (
     <div className="space-y-6">
-      <section className="rounded-xl border border-zinc-200 bg-white p-5">
-        <h2 className="mb-1 text-xl font-semibold">1. Application details</h2>
-        <p className="mb-4 text-zinc-600">What the applicant says is on the label. Leave any field blank to skip it.</p>
-        <div className="grid gap-4 sm:grid-cols-2">
-          {FIELDS.map((f) => (
-            <label key={f.key} className="block">
-              <span className="mb-1 block text-sm font-medium text-zinc-700">{f.label}</span>
-              <input
-                type="text"
-                value={expected[f.key]}
-                placeholder={f.placeholder}
-                onChange={(e) => setExpected((p) => ({ ...p, [f.key]: e.target.value }))}
-                className="w-full rounded-lg border border-zinc-300 px-3 py-2.5 text-base outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-200"
-              />
-            </label>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Try a sample — one click, no upload</CardTitle>
+          <CardDescription>Pre-loads a label and its application, then runs the check.</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-3 sm:grid-cols-3">
+          {SAMPLES.map((s) => (
+            <button key={s.id} onClick={() => loadSample(s)} disabled={busy}
+              className="group rounded-lg border bg-card p-2 text-left transition hover:border-primary hover:shadow-sm disabled:opacity-50">
+              <div className="relative mb-2 aspect-[3/4] overflow-hidden rounded-md border bg-white">
+                <Image src={s.src} alt={s.name} fill sizes="200px" className="object-contain" />
+              </div>
+              <div className="text-sm font-medium">{s.name}</div>
+              <div className="text-xs text-muted-foreground">{s.type}</div>
+              <div className="mt-1 text-xs text-muted-foreground">{s.hint}</div>
+            </button>
           ))}
-        </div>
-      </section>
+        </CardContent>
+      </Card>
 
-      <section className="rounded-xl border border-zinc-200 bg-white p-5">
-        <h2 className="mb-3 text-xl font-semibold">2. Label image</h2>
-        <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-zinc-300 bg-zinc-50 px-6 py-10 text-center hover:border-blue-500 hover:bg-blue-50">
-          <input type="file" accept="image/*" className="sr-only" onChange={(e) => pick(e.target.files?.[0])} />
-          {image ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={image.dataUrl} alt="Label preview" className="max-h-56 rounded-md border border-zinc-200" />
-          ) : (
-            <>
-              <span className="text-lg font-medium text-zinc-700">Tap to choose a label photo</span>
-              <span className="text-sm text-zinc-500">or drag an image here · JPEG / PNG</span>
-            </>
-          )}
-        </label>
-        {image && <p className="mt-2 text-sm text-zinc-500">{image.name} — tap above to change.</p>}
-      </section>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">1. Application details</CardTitle>
+          <CardDescription>What the applicant says is on the label. Blank fields are skipped.</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4 sm:grid-cols-2">
+          {FIELDS.map((f) => (
+            <div key={f.key} className="grid gap-1.5">
+              <Label htmlFor={f.key}>{f.label}</Label>
+              <Input id={f.key} value={expected[f.key]} placeholder={f.placeholder}
+                onChange={(e) => setExpected((p) => ({ ...p, [f.key]: e.target.value }))} />
+            </div>
+          ))}
+        </CardContent>
+      </Card>
 
-      <button
-        onClick={verify}
-        disabled={!image || busy}
-        className="w-full rounded-xl bg-blue-700 px-6 py-4 text-lg font-semibold text-white shadow-sm transition hover:bg-blue-800 disabled:opacity-40"
-      >
+      <Card>
+        <CardHeader><CardTitle className="text-base">2. Label image</CardTitle></CardHeader>
+        <CardContent>
+          <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed bg-muted/40 px-6 py-8 text-center transition hover:border-primary hover:bg-muted/60">
+            <input type="file" accept="image/*" className="sr-only" onChange={(e) => pick(e.target.files?.[0])} />
+            {image ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={image.dataUrl} alt="Label preview" className="max-h-56 rounded-md border" />
+            ) : (
+              <>
+                <Upload className="size-6 text-muted-foreground" />
+                <span className="font-medium">Tap to choose a label photo</span>
+                <span className="text-sm text-muted-foreground">or pick a sample above · JPEG / PNG</span>
+              </>
+            )}
+          </label>
+          {image && <p className="mt-2 text-sm text-muted-foreground">{image.name}</p>}
+        </CardContent>
+      </Card>
+
+      <Button size="lg" className="w-full" disabled={!image || busy} onClick={() => image && runVerify(image, expected)}>
         {busy ? "Checking…" : "Verify label"}
-      </button>
+      </Button>
 
-      {error && (
-        <p role="alert" className="rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-red-800">
-          {error}
-        </p>
-      )}
-
+      {error && <p role="alert" className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-destructive">{error}</p>}
       <div aria-live="polite">{result && <ResultView result={result} />}</div>
     </div>
   );
 }
 
 function ResultView({ result }: { result: VerificationResult }) {
-  const s = styleFor(result.overall);
-  const headline =
-    result.overall === "pass" ? "Everything matches" : result.overall === "review" ? "Needs a quick look" : "Problems found";
+  const tone =
+    result.overall === "pass" ? "border-green-600/30 bg-green-600/5"
+    : result.overall === "review" ? "border-amber-500/30 bg-amber-500/5"
+    : "border-red-600/30 bg-red-600/5";
+  const headline = result.overall === "pass" ? "Everything matches" : result.overall === "review" ? "Needs a quick look" : "Problems found";
   return (
-    <section className="overflow-hidden rounded-xl border border-zinc-200 bg-white">
-      <div className={`flex items-center gap-3 border-b px-5 py-4 ${s.chip}`}>
-        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/70 text-xl font-bold" aria-hidden>
-          {s.icon}
-        </span>
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wide">{s.word}</p>
-          <p className="text-xl font-bold">{headline}</p>
-        </div>
-      </div>
-
-      <ul className="divide-y divide-zinc-100">
-        {result.fields.map((f) => (
-          <FieldRow key={f.field} f={f} />
-        ))}
-        <li className="px-5 py-4">
-          <div className="flex items-center gap-2">
-            <StatusChip status={result.warning.status} />
-            <span className="font-semibold">Government Warning</span>
-          </div>
-          <p className="mt-1 text-zinc-700">{result.warning.message}</p>
+    <Card className={tone}>
+      <CardHeader className="flex-row items-center gap-3 space-y-0">
+        <StatusBadge status={result.overall} />
+        <CardTitle className="text-lg">{headline}</CardTitle>
+      </CardHeader>
+      <CardContent className="divide-y py-0">
+        {result.fields.map((f) => <FieldRow key={f.field} f={f} />)}
+        <div className="py-3">
+          <div className="flex items-center gap-2"><StatusBadge status={result.warning.status} /><span className="font-medium">Government Warning</span></div>
+          <p className="mt-1 text-sm text-muted-foreground">{result.warning.message}</p>
           {result.warning.differences.length > 0 && (
-            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-zinc-600">
-              {result.warning.differences.map((d, i) => (
-                <li key={i}>{d}</li>
-              ))}
+            <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+              {result.warning.differences.map((d, i) => <li key={i}>{d}</li>)}
             </ul>
           )}
-        </li>
-      </ul>
-
-      <footer className="flex flex-wrap justify-between gap-2 bg-zinc-50 px-5 py-3 text-xs text-zinc-500">
+        </div>
+      </CardContent>
+      <div className="flex justify-between px-6 pb-4 text-xs text-muted-foreground">
         <span>Read by {result.model}</span>
-        <span>{(result.elapsedMs / 1000).toFixed(1)}s{result.elapsedMs > 5000 ? " — over the 5s target" : ""}</span>
-      </footer>
-    </section>
+        <span>{(result.elapsedMs / 1000).toFixed(1)}s{result.elapsedMs > 5000 ? " · over 5s target" : ""}</span>
+      </div>
+    </Card>
   );
 }
 
 function FieldRow({ f }: { f: FieldResult }) {
   return (
-    <li className="px-5 py-4">
-      <div className="flex items-center gap-2">
-        <StatusChip status={f.status} />
-        <span className="font-semibold">{f.field}</span>
-      </div>
-      <p className="mt-1 text-zinc-700">{f.message}</p>
+    <div className="py-3">
+      <div className="flex items-center gap-2"><StatusBadge status={f.status} /><span className="font-medium">{f.field}</span></div>
+      <p className="mt-1 text-sm text-muted-foreground">{f.message}</p>
       {(f.expected || f.found) && (
-        <p className="mt-1 text-sm text-zinc-500">
-          Application: <span className="text-zinc-700">{f.expected ?? "—"}</span> · Label:{" "}
-          <span className="text-zinc-700">{f.found ?? "—"}</span>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Application: <span className="text-foreground">{f.expected ?? "—"}</span> · Label: <span className="text-foreground">{f.found ?? "—"}</span>
         </p>
       )}
-    </li>
+    </div>
   );
 }
 
-function StatusChip({ status }: { status: FieldStatus | "review" }) {
-  const s = styleFor(status);
+const STATUS_CLASS: Record<string, string> = {
+  pass: "border-transparent bg-green-600/15 text-green-700 dark:text-green-400",
+  review: "border-transparent bg-amber-500/15 text-amber-700 dark:text-amber-400",
+  warn: "border-transparent bg-amber-500/15 text-amber-700 dark:text-amber-400",
+  fail: "border-transparent bg-red-600/15 text-red-700 dark:text-red-400",
+  missing: "border-transparent bg-red-600/15 text-red-700 dark:text-red-400",
+  skipped: "border-transparent bg-muted text-muted-foreground",
+};
+const STATUS_WORD: Record<string, string> = { pass: "Pass", review: "Review", warn: "Review", fail: "Fail", missing: "Missing", skipped: "Not checked" };
+const STATUS_ICON: Record<string, string> = { pass: "✓", review: "!", warn: "!", fail: "✕", missing: "✕", skipped: "–" };
+
+function StatusBadge({ status }: { status: FieldStatus | "review" }) {
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold ${s.chip}`}>
-      <span aria-hidden>{s.icon}</span> {s.word}
-    </span>
+    <Badge className={STATUS_CLASS[status] ?? STATUS_CLASS.skipped}>
+      <span className="mr-1" aria-hidden>{STATUS_ICON[status]}</span>{STATUS_WORD[status]}
+    </Badge>
   );
 }
-
-// ---- Batch mode ----
 
 type Row = { img: PreparedImage; status: "pending" | "running" | "done" | "error"; result?: VerificationResult; error?: string };
 
-const CSV_MAP: Record<string, string> = {
-  filename: "filename", file: "filename", brand: "brandName", "brand name": "brandName", brandname: "brandName",
-  class: "classType", "class/type": "classType", type: "classType", abv: "alcoholContent", alcohol: "alcoholContent",
-  "alcohol content": "alcoholContent", net: "netContents", "net contents": "netContents", netcontents: "netContents", contents: "netContents",
-  bottler: "bottlerInfo", "bottler name": "bottlerInfo", "bottler name & address": "bottlerInfo", producer: "bottlerInfo",
-  country: "countryOfOrigin", "country of origin": "countryOfOrigin", origin: "countryOfOrigin",
-};
-
-function parseCsv(text: string): Record<string, Partial<Expected>> {
-  const lines = text.split(/\r?\n/).filter((l) => l.trim());
-  if (!lines.length) return {};
-  const headers = lines[0].split(",").map((h) => h.trim().toLowerCase());
-  const out: Record<string, Partial<Expected>> = {};
-  for (let i = 1; i < lines.length; i++) {
-    const cells = lines[i].split(",").map((c) => c.trim());
-    const row: Partial<Expected> = {};
-    let fname = "";
-    headers.forEach((h, j) => {
-      const key = CSV_MAP[h];
-      if (key === "filename") fname = cells[j];
-      else if (key) (row as Record<string, string>)[key] = cells[j] ?? "";
-    });
-    if (fname) out[fname] = row;
-  }
-  return out;
-}
-
 function BatchMode() {
   const [rows, setRows] = useState<Row[]>([]);
-  const [csv, setCsv] = useState<Record<string, Partial<Expected>>>({});
   const [busy, setBusy] = useState(false);
 
   async function pick(files: FileList | null) {
@@ -272,96 +243,68 @@ function BatchMode() {
     const prepared = await Promise.all([...files].map((f) => prepareImage(f)));
     setRows(prepared.map((img) => ({ img, status: "pending" })));
   }
-
-  function loadCsv(file?: File) {
-    if (!file) return;
-    const r = new FileReader();
-    r.onload = () => setCsv(parseCsv(String(r.result)));
-    r.readAsText(file);
-  }
-
   async function run() {
     setBusy(true);
     setRows((prev) => prev.map((r) => ({ ...r, status: "pending", result: undefined, error: undefined })));
-    const snapshot = rows.map((r) => r.img);
+    const snap = rows.map((r) => r.img);
     let next = 0;
     async function worker() {
-      while (next < snapshot.length) {
-        const idx = next++;
-        setRows((prev) => prev.map((r, j) => (j === idx ? { ...r, status: "running" } : r)));
+      while (next < snap.length) {
+        const i = next++;
+        setRows((prev) => prev.map((r, j) => (j === i ? { ...r, status: "running" } : r)));
         try {
-          const res = await verifyImage(snapshot[idx], csv[snapshot[idx].name] ?? {});
-          setRows((prev) => prev.map((r, j) => (j === idx ? { ...r, status: "done", result: res } : r)));
+          const res = await verifyImage(snap[i], {});
+          setRows((prev) => prev.map((r, j) => (j === i ? { ...r, status: "done", result: res } : r)));
         } catch (e) {
-          setRows((prev) => prev.map((r, j) => (j === idx ? { ...r, status: "error", error: e instanceof Error ? e.message : String(e) } : r)));
+          setRows((prev) => prev.map((r, j) => (j === i ? { ...r, status: "error", error: e instanceof Error ? e.message : String(e) } : r)));
         }
       }
     }
     await Promise.all([worker(), worker(), worker()]);
     setBusy(false);
   }
-
   const done = rows.filter((r) => r.status === "done" || r.status === "error").length;
 
   return (
     <div className="space-y-5">
-      <section className="rounded-xl border border-zinc-200 bg-white p-5">
-        <h2 className="mb-3 text-xl font-semibold">Upload labels</h2>
-        <div className="flex flex-wrap gap-3">
-          <label className="cursor-pointer rounded-lg bg-blue-700 px-4 py-2.5 font-medium text-white hover:bg-blue-800">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Batch screening</CardTitle>
+          <CardDescription>Upload many labels; each is screened for the Government Warning and field consistency.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <label className="inline-flex cursor-pointer items-center gap-2 rounded-md bg-primary px-4 py-2.5 font-medium text-primary-foreground hover:bg-primary/90">
+            <Upload className="size-4" />
             <input type="file" accept="image/*" multiple className="sr-only" onChange={(e) => pick(e.target.files)} />
             Choose label images
           </label>
-          <label className="cursor-pointer rounded-lg border border-zinc-300 bg-white px-4 py-2.5 font-medium text-zinc-700 hover:bg-zinc-50">
-            <input type="file" accept=".csv,text/csv" className="sr-only" onChange={(e) => loadCsv(e.target.files?.[0])} />
-            Add expected values (CSV, optional)
-          </label>
-        </div>
-        <p className="mt-2 text-sm text-zinc-500">
-          {rows.length > 0 ? `${rows.length} image(s) ready` : "No images yet."}
-          {Object.keys(csv).length > 0 ? ` · ${Object.keys(csv).length} CSV row(s) matched by filename` : ""}
-        </p>
-        <p className="mt-1 text-xs text-zinc-400">CSV columns: filename, brand, class, abv, net contents. Without a CSV, each label is screened for the Government Warning and field consistency.</p>
-      </section>
-
+          <p className="mt-2 text-sm text-muted-foreground">{rows.length ? `${rows.length} image(s) ready` : "No images yet."}</p>
+        </CardContent>
+      </Card>
       {rows.length > 0 && (
-        <button
-          onClick={run}
-          disabled={busy}
-          className="w-full rounded-xl bg-blue-700 px-6 py-3.5 text-lg font-semibold text-white hover:bg-blue-800 disabled:opacity-40"
-        >
+        <Button className="w-full" size="lg" disabled={busy} onClick={run}>
           {busy ? `Checking… ${done}/${rows.length}` : `Verify all ${rows.length}`}
-        </button>
+        </Button>
       )}
-
       {rows.length > 0 && (
-        <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-zinc-50 text-xs uppercase text-zinc-500">
-              <tr>
-                <th className="px-4 py-3">Label</th>
-                <th className="px-4 py-3">Result</th>
-                <th className="px-4 py-3">Gov. Warning</th>
-                <th className="px-4 py-3">Brand</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-100">
-              {rows.map((r, i) => {
-                const brand = r.result?.fields.find((f) => f.field === "Brand Name");
-                return (
+        <Card>
+          <CardContent className="p-0">
+            <table className="w-full text-left text-sm">
+              <thead className="border-b text-xs uppercase text-muted-foreground">
+                <tr><th className="px-4 py-3">Label</th><th className="px-4 py-3">Result</th><th className="px-4 py-3">Gov. Warning</th></tr>
+              </thead>
+              <tbody className="divide-y">
+                {rows.map((r, i) => (
                   <tr key={i}>
-                    <td className="max-w-[14rem] truncate px-4 py-3 font-medium">{r.img.name}</td>
-                    <td className="px-4 py-3">
-                      {r.status === "running" ? "…" : r.status === "pending" ? "—" : r.error ? <span className="text-red-700">Error</span> : r.result && <StatusChip status={r.result.overall} />}
-                    </td>
-                    <td className="px-4 py-3">{r.result ? <StatusChip status={r.result.warning.status} /> : "—"}</td>
-                    <td className="px-4 py-3">{brand ? <StatusChip status={brand.status} /> : "—"}</td>
+                    <td className="max-w-[16rem] truncate px-4 py-3 font-medium">{r.img.name}</td>
+                    <td className="px-4 py-3">{r.status === "running" ? "…" : r.status === "pending" ? "—" : r.error ? <span className="text-destructive">Error</span> : r.result && <StatusBadge status={r.result.overall} />}</td>
+                    <td className="px-4 py-3">{r.result ? <StatusBadge status={r.result.warning.status} /> : "—"}</td>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                ))}
+              </tbody>
+            </table>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

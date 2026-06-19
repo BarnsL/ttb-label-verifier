@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800" font-family="'Helvetica Neue', Arial, sans-serif">
+  <rect width="600" height="800" fill="#eef3f6"/>
+  <rect x="22" y="22" width="556" height="756" fill="none" stroke="#2a4a63" stroke-width="3"/>
+  <text x="300" y="150" text-anchor="middle" font-size="52" letter-spacing="6" fill="#1f3a52" font-weight="bold">SILVER BIRCH</text>
+  <text x="300" y="196" text-anchor="middle" font-size="20" letter-spacing="10" fill="#3a6385">PREMIUM VODKA</text>
+  <line x1="170" y1="232" x2="430" y2="232" stroke="#3a6385" stroke-width="1.5"/>
+  <text x="300" y="288" text-anchor="middle" font-size="22" fill="#27435c">Vodka</text>
+  <text x="300" y="384" text-anchor="middle" font-size="17" fill="#27435c">Distilled and bottled by</text>
+  <text x="300" y="408" text-anchor="middle" font-size="17" fill="#27435c">Silver Birch Spirits, Austin, Texas</text>
+  <text x="300" y="474" text-anchor="middle" font-size="24" fill="#27435c" font-weight="bold">40% Alc./Vol. (80 Proof)</text>
+  <text x="300" y="508" text-anchor="middle" font-size="22" fill="#27435c">750 mL</text>
+  <rect x="70" y="562" width="460" height="184" fill="none" stroke="#27435c" stroke-width="1"/>
+  <!-- NON-COMPLIANT: heading is Title Case and not bold (should be ALL CAPS + bold) -->
+  <text x="90" y="602" font-size="13" fill="#1a1a1a" font-family="Arial, sans-serif">Government Warning:</text>
+  <text x="90" y="626" font-size="13" fill="#1a1a1a" font-family="Arial, sans-serif">(1) According to the Surgeon General, women should not drink</text>
+  <text x="90" y="644" font-size="13" fill="#1a1a1a" font-family="Arial, sans-serif">alcoholic beverages during pregnancy because of the risk of</text>
+  <text x="90" y="662" font-size="13" fill="#1a1a1a" font-family="Arial, sans-serif">birth defects. (2) Consumption of alcoholic beverages impairs</text>
+  <text x="90" y="680" font-size="13" fill="#1a1a1a" font-family="Arial, sans-serif">your ability to drive a car or operate machinery, and may</text>
+  <text x="90" y="698" font-size="13" fill="#1a1a1a" font-family="Arial, sans-serif">cause health problems.</text>
+</svg>
