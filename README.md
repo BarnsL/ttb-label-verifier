@@ -22,7 +22,9 @@ npm run dev                    # http://localhost:3000
 | **Class / type** | Same fuzzy match. |
 | **Alcohol content** | Parsed to a number; any difference vs. the application is flagged. |
 | **Net contents** | Unit-normalized (`750 mL` = `750ML` = `750 milliliters`). |
-| **Government Warning** | Must be present, with `GOVERNMENT WARNING:` in **capital letters**, and match the mandatory statement **word-for-word** (27 CFR §16.21). Deviations are pinpointed. |
+| **Bottler name/address** | Fuzzy match against the application (optional field). |
+| **Country of origin** | Fuzzy match (optional; mainly for imports). |
+| **Government Warning** | Present, with `GOVERNMENT WARNING:` in **capital letters** and **bold** (§16.22), and matching the mandatory statement **word-for-word** (27 CFR §16.21). Deviations are pinpointed. |
 
 ## How it works
 
@@ -36,11 +38,11 @@ Upload many images at once. Optionally add a **CSV** (`filename, brand, class, a
 
 `ANTHROPIC_MODEL` swaps the vision model with no code change, to balance accuracy vs. the ≤5s requirement on your infrastructure:
 
-- `claude-opus-4-8` (default) — most accurate on poor images
-- `claude-sonnet-4-6` — balanced
+- `claude-sonnet-4-6` (default) — ~4.5–5.0s, accurate; meets the ~5-second target
+- `claude-opus-4-8` — most accurate on poor images (~5.2s)
 - `claude-haiku-4-5` — fastest, lowest cost
 
-The result footer shows the actual elapsed time and flags anything over 5s.
+The result footer shows the actual elapsed time and flags anything over 5s. (The very first request also pays a one-time schema compile of a few seconds, cached for 24h.)
 
 ## Test labels
 

@@ -11,6 +11,10 @@ export interface ExpectedFields {
   alcoholContent?: string;
   /** e.g. "750 mL". */
   netContents?: string;
+  /** Name and address of the bottler/producer. */
+  bottlerInfo?: string;
+  /** Country of origin (mainly for imports). */
+  countryOfOrigin?: string;
 }
 
 /** Structured fields the vision model reads off the label image. */
@@ -22,8 +26,14 @@ export interface ExtractedLabel {
   /** Parsed ABV percentage, or -1 when none could be read. */
   abvPercent: number;
   netContents: string;
+  /** Name and address of the bottler/producer, "" when absent. */
+  bottlerInfo: string;
+  /** Country of origin (imports), "" when absent. */
+  countryOfOrigin: string;
   /** Full warning text read from the label, "" when absent. */
   governmentWarning: string;
+  /** Whether the "GOVERNMENT WARNING" heading appears in bold type. */
+  warningHeadingBold: boolean;
   /** Model's judgement on whether the image was clear enough to read. */
   legible: boolean;
   /** Free-text notes (glare, angle, illegible regions). */

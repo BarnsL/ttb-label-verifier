@@ -139,8 +139,10 @@ export function verifyLabel(
     fuzzy("Class / Type", expected.classType, extracted.classType),
     checkAbv(expected.alcoholContent, extracted),
     checkNetContents(expected.netContents, extracted.netContents),
+    fuzzy("Bottler Name / Address", expected.bottlerInfo, extracted.bottlerInfo),
+    fuzzy("Country of Origin", expected.countryOfOrigin, extracted.countryOfOrigin),
   ];
-  const warning = checkWarning(extracted.governmentWarning);
+  const warning = checkWarning(extracted.governmentWarning, extracted.warningHeadingBold);
 
   const statuses = [...fields.map((f) => f.status), warning.status];
   const overall: VerificationResult["overall"] = statuses.some(

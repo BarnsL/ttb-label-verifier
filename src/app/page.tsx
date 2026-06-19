@@ -9,11 +9,13 @@ const FIELDS = [
   { key: "classType", label: "Class / type", placeholder: "e.g. Kentucky Straight Bourbon Whiskey" },
   { key: "alcoholContent", label: "Alcohol content", placeholder: "e.g. 45% Alc./Vol. (90 Proof)" },
   { key: "netContents", label: "Net contents", placeholder: "e.g. 750 mL" },
+  { key: "bottlerInfo", label: "Bottler name & address", placeholder: "e.g. Old Tom Distillery Co., Bardstown, KY" },
+  { key: "countryOfOrigin", label: "Country of origin (imports)", placeholder: "e.g. United States" },
 ] as const;
 
 type ExpectedKey = (typeof FIELDS)[number]["key"];
 type Expected = Record<ExpectedKey, string>;
-const EMPTY: Expected = { brandName: "", classType: "", alcoholContent: "", netContents: "" };
+const EMPTY: Expected = { brandName: "", classType: "", alcoholContent: "", netContents: "", bottlerInfo: "", countryOfOrigin: "" };
 
 type Style = { chip: string; text: string; icon: string; word: string };
 const STATUS: Record<string, Style> = {
@@ -237,6 +239,8 @@ const CSV_MAP: Record<string, string> = {
   filename: "filename", file: "filename", brand: "brandName", "brand name": "brandName", brandname: "brandName",
   class: "classType", "class/type": "classType", type: "classType", abv: "alcoholContent", alcohol: "alcoholContent",
   "alcohol content": "alcoholContent", net: "netContents", "net contents": "netContents", netcontents: "netContents", contents: "netContents",
+  bottler: "bottlerInfo", "bottler name": "bottlerInfo", "bottler name & address": "bottlerInfo", producer: "bottlerInfo",
+  country: "countryOfOrigin", "country of origin": "countryOfOrigin", origin: "countryOfOrigin",
 };
 
 function parseCsv(text: string): Record<string, Partial<Expected>> {

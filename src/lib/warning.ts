@@ -28,13 +28,15 @@ function escapeRegExp(s: string): string {
 }
 
 /**
- * Verify a Government Warning string read from a label.
- *
- * Two independent requirements, both from TTB rules:
+ * Verify a Government Warning read from a label, against TTB rules:
  *   1. The "GOVERNMENT WARNING:" heading appears in capital letters (§16.22).
- *   2. The full statement matches the mandatory wording word-for-word (§16.21).
+ *   2. The heading is in bold type (§16.22) — reported by the vision model.
+ *   3. The full statement matches the mandatory wording word-for-word (§16.21).
  */
-export function checkWarning(found: string | null | undefined): WarningCheck {
+export function checkWarning(
+  found: string | null | undefined,
+  headingBold?: boolean,
+): WarningCheck {
   const raw = (found ?? "").trim();
 
   if (!raw) {
@@ -69,8 +71,13 @@ export function checkWarning(found: string | null | undefined): WarningCheck {
     differences.push("The wording does not match the mandatory statement word-for-word.");
     differences.push(...firstWordingDelta(normalized));
   }
+  if (headingBold === false) {
+    differences.push(
+      'The "GOVERNMENT WARNING" heading does not appear to be in bold type (27 CFR §16.22 requires bold) — please verify.',
+    );
+  }
 
-  const ok = prefixAllCaps && exactMatch;
+  const ok = prefixAllCaps && exactMatch && headingBold !== false;
   return {
     status: ok ? "pass" : "fail",
     present: true,
