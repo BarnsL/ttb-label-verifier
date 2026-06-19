@@ -80,15 +80,6 @@ export default function Home() {
             </div>
           </header>
 
-          <div className="mb-6 flex flex-wrap items-center gap-2">
-            {["AI vision", "≤ 5-second results", "Nothing stored", "27 CFR §16.21"].map((b) => (
-              <span key={b} className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-card/60 px-3 py-1 text-xs text-muted-foreground backdrop-blur">
-                <span className="size-1.5 rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500" />
-                {b}
-              </span>
-            ))}
-          </div>
-
           <Tabs defaultValue="single">
             <TabsList className="mb-6">
               <TabsTrigger value="single">Single label</TabsTrigger>
