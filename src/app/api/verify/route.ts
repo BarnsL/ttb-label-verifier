@@ -1,5 +1,6 @@
 import { extractLabel, MODEL } from "@/lib/extract";
 import { verifyLabel } from "@/lib/verify";
+import { rateLimit, clientIp } from "@/lib/ratelimit";
 import type { ExpectedFields } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -25,6 +26,10 @@ export async function POST(req: Request) {
       { error: "Server is missing ANTHROPIC_API_KEY. Add it to the environment to enable verification." },
       500,
     );
+  }
+
+  if (!rateLimit(`verify:${clientIp(req)}`, 20, 60_000)) {
+    return json({ error: "Too many requests — please wait a moment and try again." }, 429);
   }
 
   let body: Body;

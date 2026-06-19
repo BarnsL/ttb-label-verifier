@@ -1,3 +1,5 @@
+import { rateLimit, clientIp } from "@/lib/ratelimit";
+
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -28,6 +30,10 @@ function esc(s: string) {
 export async function POST(req: Request) {
   if (!process.env.RESEND_API_KEY) {
     return json({ error: "Email is not configured on this deployment (missing RESEND_API_KEY)." }, 500);
+  }
+
+  if (!rateLimit(`grade:${clientIp(req)}`, 5, 60_000)) {
+    return json({ error: "Too many requests — please wait a moment." }, 429);
   }
 
   let body: Body;

@@ -7,6 +7,7 @@ import { Upload } from "lucide-react";
 import type { VerificationResult, FieldResult, FieldStatus } from "@/lib/types";
 import { prepareImage, type PreparedImage } from "@/lib/image";
 import { buttonVariants } from "@/components/ui/button";
+import { ShimmerButton } from "@/components/ui/shimmer-button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -182,16 +183,15 @@ function SingleMode() {
         </CardContent>
       </Card>
 
-      <Tooltip>
-        <TooltipTrigger
-          className={cn(buttonVariants({ size: "lg" }), "w-full")}
-          disabled={!image || busy}
-          onClick={() => image && runVerify(image, expected)}
-        >
-          {busy ? "Checking…" : "Verify label"}
-        </TooltipTrigger>
-        <TooltipContent>Read the label with AI and check it against the application details</TooltipContent>
-      </Tooltip>
+      <ShimmerButton
+        onClick={() => image && runVerify(image, expected)}
+        disabled={!image || busy}
+        title="Read the label with AI and check it against the application details"
+        background="linear-gradient(110deg, oklch(0.32 0.07 264), oklch(0.18 0.05 264))"
+        className="h-12 w-full rounded-xl text-base font-medium text-white dark:text-white disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        {busy ? "Checking…" : "Verify label"}
+      </ShimmerButton>
 
       {error && <p role="alert" className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-destructive">{error}</p>}
       <div aria-live="polite">{result && <ResultView result={result} />}</div>
