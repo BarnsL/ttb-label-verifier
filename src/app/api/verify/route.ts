@@ -33,7 +33,8 @@
 
 import { extractLabel, MODEL } from "@/lib/extract";
 import { verifyLabel } from "@/lib/verify";
-import { rateLimit, clientIp } from "@/lib/ratelimit";
+import { clientIp } from "@/lib/ratelimit";
+import { checkRateLimit } from "@/lib/ratelimit-upstash";
 import type { ExpectedFields } from "@/lib/types";
 
 // Use Node.js runtime (not Edge) because the Anthropic SDK uses Node APIs.
@@ -104,9 +105,13 @@ export async function POST(req: Request): Promise<Response> {
     );
   }
 
-  // Rate limit: 20 verify requests per minute per client IP.
-  if (!rateLimit(`verify:${clientIp(req)}`, 20, 60_000)) {
-    return json({ error: "Too many requests — please wait a moment and try again." }, 429);
+  // Rate limit: 20 verify requests per minute per IP (distributed via Upstash when configured).
+  const rl = await checkRateLimit(`verify:${clientIp(req)}`, 20, 60);
+  if (!rl.allowed) {
+    return new Response(JSON.stringify({ error: "Too many requests — please wait a moment and try again." }), {
+      status: 429,
+      headers: { "Content-Type": "application/json", ...(rl.headers ?? {}) },
+    });
   }
 
   // Parse the request body.

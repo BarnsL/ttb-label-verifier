@@ -16,6 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { DocsDialog } from "@/components/docs-dialog";
+import { reopenCookieBanner } from "@/components/cookie-banner";
 import { cn } from "@/lib/utils";
 
 const FIELDS = [
@@ -59,7 +60,7 @@ export default function Home() {
   const [model, setModel] = useState<ModelChoice>("sonnet");
   return (
     <TooltipProvider>
-      <main className="relative min-h-screen overflow-hidden">
+      <main id="main-content" className="relative min-h-screen overflow-hidden">
         <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
           <div className="absolute -top-32 left-1/2 h-72 w-[42rem] -translate-x-1/2 rounded-full bg-violet-600/25 blur-[100px]" />
           <div className="absolute -top-16 right-0 h-72 w-[32rem] rounded-full bg-fuchsia-500/20 blur-[110px]" />
@@ -98,11 +99,26 @@ export default function Home() {
             <TabsContent value="batch"><BatchMode model={model} /></TabsContent>
           </Tabs>
 
-          <footer className="mt-12 flex flex-col items-center justify-between gap-3 border-t pt-6 text-xs text-muted-foreground sm:flex-row">
-            <span>TTB label-verification prototype · Claude vision + deterministic checks</span>
-            <div className="flex items-center gap-4">
-              <a href="https://github.com/BarnsL/ttb-label-verifier" target="_blank" rel="noreferrer" className="transition hover:text-violet-500">Source</a>
-              <Link href="/grade" className="transition hover:text-violet-500">Grade this app</Link>
+          <footer className="mt-12 border-t pt-6 text-xs text-muted-foreground">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <span>TTB label-verification prototype · Claude vision + deterministic checks</span>
+              <div className="flex flex-wrap items-center gap-4">
+                <a href="https://github.com/BarnsL/ttb-label-verifier" target="_blank" rel="noreferrer" className="transition hover:text-violet-500">Source</a>
+                <Link href="/grade" className="transition hover:text-violet-500">Grade this app</Link>
+              </div>
+            </div>
+            {/* Compliance links — required for CCPA/CPRA (California) */}
+            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1">
+              <Link href="/privacy" className="transition hover:text-foreground">Privacy Policy</Link>
+              <Link href="/terms" className="transition hover:text-foreground">Terms of Service</Link>
+              <Link href="/privacy#do-not-sell" className="transition hover:text-foreground">Do Not Sell or Share My Personal Information</Link>
+              <button
+                onClick={reopenCookieBanner}
+                className="transition hover:text-foreground focus:outline-none focus:underline"
+              >
+                Cookie Settings
+              </button>
+              <Link href="/security" className="transition hover:text-foreground">Security</Link>
             </div>
           </footer>
         </div>

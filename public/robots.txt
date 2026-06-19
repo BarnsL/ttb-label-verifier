@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+
+# /grade is a reviewer-only scoring form — no value for crawlers.
+Disallow: /grade
+
+Sitemap: https://ttb-label-verifier-barnslau.vercel.app/sitemap.xml

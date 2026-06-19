@@ -33,7 +33,8 @@
  *   - RESEND_API_KEY is server-side only; never sent to the browser.
  */
 
-import { rateLimit, clientIp } from "@/lib/ratelimit";
+import { clientIp } from "@/lib/ratelimit";
+import { checkRateLimit } from "@/lib/ratelimit-upstash";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -103,8 +104,12 @@ export async function POST(req: Request): Promise<Response> {
   }
 
   // Rate limit: 5 grade submissions per minute per IP — prevents email spam.
-  if (!rateLimit(`grade:${clientIp(req)}`, 5, 60_000)) {
-    return json({ error: "Too many requests — please wait a moment." }, 429);
+  const rl = await checkRateLimit(`grade:${clientIp(req)}`, 5, 60);
+  if (!rl.allowed) {
+    return new Response(JSON.stringify({ error: "Too many requests — please wait a moment." }), {
+      status: 429,
+      headers: { "Content-Type": "application/json", ...(rl.headers ?? {}) },
+    });
   }
 
   let body: Body;

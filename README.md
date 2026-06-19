@@ -21,6 +21,7 @@
   - [Other Features](#other-touches)
 - [What Gets Checked](#what-gets-checked)
 - [How It Works](#how-it-works)
+- [Security & Abuse Protections](#security--abuse-protections)
 - [Run It Yourself](#run-it-yourself)
 - [Project Structure](#project-structure)
 - [Testing](#testing)
@@ -117,6 +118,36 @@ The verdict never rides on the model "feeling" that two things match — it's te
 
 ---
 
+## Security & Abuse Protections
+
+The Service is protected against automated abuse and common web vulnerabilities. A summary:
+
+| Protection | Details |
+|---|---|
+| **Rate limiting** | All API endpoints are rate-limited per IP address. Requests over the limit receive HTTP 429 with a `Retry-After` header. Distributed via Upstash Redis when configured (see env vars below); falls back to in-memory. |
+| **Distributed rate limits (Upstash)** | When `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` are set, rate-limit counters are shared across all Vercel serverless instances. Get free-tier credentials at [console.upstash.com](https://console.upstash.com). |
+| **Request validation** | Images are restricted to an allowlist of MIME types (JPEG/PNG/GIF/WebP) and a maximum payload size. Model selection is checked against an enumerated allowlist. |
+| **Security headers** | All responses include: CSP, HSTS, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`, `Permissions-Policy`, `Cross-Origin-Opener-Policy`. |
+| **No server-side storage** | Label images and COLA form data are processed in memory and discarded immediately — nothing is written to disk or a database. |
+| **No secrets in client bundle** | `ANTHROPIC_API_KEY` and all service credentials are server-side only; never shipped to the browser. |
+| **SSRF prevention** | The server never fetches user-supplied URLs; images are transmitted as client-side base64. |
+| **Global Privacy Control (GPC)** | The server recognizes the `Sec-GPC: 1` browser header and honors opt-out automatically. |
+
+For a full technical breakdown, see the [/security](https://ttb-label-verifier-barnslau.vercel.app/security) page.
+
+### Upstash Rate Limiting Setup
+
+To enable distributed rate limiting, add these environment variables to your Vercel project:
+
+```
+UPSTASH_REDIS_REST_URL=https://<your-db>.upstash.io
+UPSTASH_REDIS_REST_TOKEN=<your-token>
+```
+
+Get free-tier credentials from [console.upstash.com](https://console.upstash.com) → Create Database → REST API. Without these, the app falls back to per-instance in-memory rate limiting (fine for single-instance or low-traffic deployments).
+
+---
+
 ## Run It Yourself
 
 ```bash
@@ -139,8 +170,11 @@ ttb-label-verifier/
 │   └── APPROACH.md            ← Architecture rationale and design decisions
 ├── src/
 │   ├── app/
-│   │   ├── page.tsx           ← Main UI (single label + batch modes)
-│   │   ├── layout.tsx         ← Root layout with theme provider
+│   │   ├── page.tsx           ← Main UI (single label + batch modes) + compliance footer
+│   │   ├── layout.tsx         ← Root layout: meta/OG tags, SkipLink, AgeGate, CookieBanner
+│   │   ├── privacy/           ← /privacy — CCPA/CPRA privacy policy
+│   │   ├── terms/             ← /terms  — Terms of Service (21+ age requirement)
+│   │   ├── security/          ← /security — Security & Abuse Prevention disclosure
 │   │   ├── grade/
 │   │   │   └── page.tsx       ← Reviewer scorecard page
 │   │   └── api/
@@ -153,14 +187,21 @@ ttb-label-verifier/
 │   │   ├── verify.ts          ← Stage 2: deterministic field-by-field verdicts
 │   │   ├── warning.ts         ← Government Warning check (27 CFR §§16.21–16.22)
 │   │   ├── image.ts           ← Client-side image prep (downscale + JPEG re-encode)
-│   │   └── ratelimit.ts       ← In-memory sliding-window rate limiter
-│   └── components/
-│       ├── ui/                ← shadcn/ui base components
-│       ├── theme-provider.tsx
-│       ├── theme-toggle.tsx
-│       └── docs-dialog.tsx    ← In-app README dialog
+│   │   ├── ratelimit.ts       ← In-memory sliding-window rate limiter + clientIp()
+│   │   └── ratelimit-upstash.ts ← Distributed rate limiting (Upstash Redis + in-memory fallback)
+│   ├── components/
+│   │   ├── ui/                ← shadcn/ui base components
+│   │   ├── skip-link.tsx      ← WCAG 2.1 SC 2.4.1 "Skip to main content" link
+│   │   ├── age-gate.tsx       ← 21+ age verification modal (localStorage, 30-day)
+│   │   ├── cookie-banner.tsx  ← CCPA cookie-consent banner (GPC-aware, granular categories)
+│   │   ├── theme-provider.tsx
+│   │   ├── theme-toggle.tsx
+│   │   └── docs-dialog.tsx    ← In-app README dialog
+│   └── middleware.ts          ← Security headers (CSP, HSTS, COOP, etc.) + GPC cookie
 ├── public/
-│   └── samples/               ← Built-in sample label images
+│   ├── samples/               ← Built-in sample label images
+│   ├── robots.txt             ← Allows all crawlers; disallows /api/, /grade
+│   └── sitemap.xml            ← URL sitemap for /,  /privacy, /terms, /security
 ├── .env.example               ← Environment variable documentation
 ├── CONTRIBUTING.md
 ├── LICENSE
