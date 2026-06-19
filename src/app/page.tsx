@@ -56,14 +56,14 @@ export default function Home() {
     <TooltipProvider>
       <main className="relative min-h-screen overflow-hidden">
         <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-          <div className="absolute -top-32 left-1/2 h-72 w-[42rem] -translate-x-1/2 rounded-full bg-indigo-500/25 blur-[100px]" />
-          <div className="absolute -top-16 right-0 h-72 w-[32rem] rounded-full bg-violet-500/20 blur-[100px]" />
-          <div className="absolute top-48 left-1/3 h-64 w-[40rem] -translate-x-1/2 rounded-full bg-sky-400/10 blur-[120px]" />
+          <div className="absolute -top-32 left-1/2 h-72 w-[42rem] -translate-x-1/2 rounded-full bg-violet-600/25 blur-[100px]" />
+          <div className="absolute -top-16 right-0 h-72 w-[32rem] rounded-full bg-fuchsia-500/20 blur-[110px]" />
+          <div className="absolute top-48 left-1/4 h-64 w-[40rem] -translate-x-1/2 rounded-full bg-purple-500/15 blur-[120px]" />
         </div>
         <div className="mx-auto max-w-3xl px-5 py-8">
           <header className="mb-8 flex items-start justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-lg shadow-indigo-500/25">
+              <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-600 text-white shadow-lg shadow-violet-500/30">
                 <ShieldCheck className="size-6" />
               </div>
               <div>
@@ -80,6 +80,15 @@ export default function Home() {
             </div>
           </header>
 
+          <div className="mb-6 flex flex-wrap items-center gap-2">
+            {["AI vision", "≤ 5-second results", "Nothing stored", "27 CFR §16.21"].map((b) => (
+              <span key={b} className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-card/60 px-3 py-1 text-xs text-muted-foreground backdrop-blur">
+                <span className="size-1.5 rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500" />
+                {b}
+              </span>
+            ))}
+          </div>
+
           <Tabs defaultValue="single">
             <TabsList className="mb-6">
               <TabsTrigger value="single">Single label</TabsTrigger>
@@ -88,6 +97,14 @@ export default function Home() {
             <TabsContent value="single"><SingleMode /></TabsContent>
             <TabsContent value="batch"><BatchMode /></TabsContent>
           </Tabs>
+
+          <footer className="mt-12 flex flex-col items-center justify-between gap-3 border-t pt-6 text-xs text-muted-foreground sm:flex-row">
+            <span>TTB label-verification prototype · Claude vision + deterministic checks</span>
+            <div className="flex items-center gap-4">
+              <a href="https://github.com/BarnsL/ttb-label-verifier" target="_blank" rel="noreferrer" className="transition hover:text-violet-500">Source</a>
+              <Link href="/grade" className="transition hover:text-violet-500">Grade this app</Link>
+            </div>
+          </footer>
         </div>
       </main>
     </TooltipProvider>
@@ -136,14 +153,19 @@ function SingleMode() {
               <TooltipTrigger
                 onClick={() => loadSample(s)}
                 disabled={busy}
-                className="group rounded-lg border bg-card p-2 text-left transition hover:border-primary hover:shadow-md disabled:pointer-events-none disabled:opacity-50"
+                className="group relative overflow-hidden rounded-xl border bg-card p-3 text-left transition hover:-translate-y-0.5 hover:border-violet-500/50 hover:shadow-lg hover:shadow-violet-500/10 disabled:pointer-events-none disabled:opacity-50"
               >
-                <div className="relative mb-2 aspect-[3/4] overflow-hidden rounded-md border bg-white">
-                  <Image src={s.src} alt={s.name} fill sizes="200px" className="object-contain transition group-hover:scale-[1.03]" />
+                <div className="relative mb-3 aspect-[3/4] overflow-hidden rounded-lg border bg-white">
+                  <Image src={s.src} alt={s.name} fill sizes="220px" className="object-contain transition duration-300 group-hover:scale-[1.04]" />
                 </div>
-                <div className="text-sm font-medium">{s.name}</div>
-                <div className="text-xs text-muted-foreground">{s.type}</div>
-                <div className="mt-1 text-xs text-muted-foreground">{s.hint}</div>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-semibold">{s.name}</div>
+                    <div className="text-xs text-muted-foreground">{s.type}</div>
+                  </div>
+                  <span className="shrink-0 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-violet-500">→</span>
+                </div>
+                <div className="mt-2 text-xs text-muted-foreground">{s.hint}</div>
               </TooltipTrigger>
               <TooltipContent>Load &amp; verify this sample instantly — no upload</TooltipContent>
             </Tooltip>
@@ -191,7 +213,7 @@ function SingleMode() {
         onClick={() => image && runVerify(image, expected)}
         disabled={!image || busy}
         title="Read the label with AI and check it against the application details"
-        background="linear-gradient(110deg, oklch(0.32 0.07 264), oklch(0.18 0.05 264))"
+        background="linear-gradient(110deg,#7c3aed,#9333ea,#c026d3)"
         className="h-12 w-full rounded-xl text-base font-medium text-white dark:text-white disabled:cursor-not-allowed disabled:opacity-50"
       >
         {busy ? "Checking…" : "Verify label"}
