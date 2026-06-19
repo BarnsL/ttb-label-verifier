@@ -5,21 +5,24 @@ import Image from "next/image";
 import { Upload } from "lucide-react";
 import type { VerificationResult, FieldResult, FieldStatus } from "@/lib/types";
 import { prepareImage, type PreparedImage } from "@/lib/image";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { DocsDialog } from "@/components/docs-dialog";
+import { cn } from "@/lib/utils";
 
 const FIELDS = [
-  { key: "brandName", label: "Brand name", placeholder: "e.g. OLD TOM DISTILLERY" },
-  { key: "classType", label: "Class / type", placeholder: "e.g. Kentucky Straight Bourbon Whiskey" },
-  { key: "alcoholContent", label: "Alcohol content", placeholder: "e.g. 45% Alc./Vol. (90 Proof)" },
-  { key: "netContents", label: "Net contents", placeholder: "e.g. 750 mL" },
-  { key: "bottlerInfo", label: "Bottler name & address", placeholder: "e.g. Old Tom Distillery Co., Bardstown, KY" },
-  { key: "countryOfOrigin", label: "Country of origin (imports)", placeholder: "e.g. United States" },
+  { key: "brandName", label: "Brand name", placeholder: "e.g. OLD TOM DISTILLERY", tip: "The brand name the applicant entered. Matched case/punctuation-insensitive." },
+  { key: "classType", label: "Class / type", placeholder: "e.g. Kentucky Straight Bourbon Whiskey", tip: "The class/type designation, e.g. the spirit or wine type." },
+  { key: "alcoholContent", label: "Alcohol content", placeholder: "e.g. 45% Alc./Vol. (90 Proof)", tip: "Compared numerically — a different ABV is flagged." },
+  { key: "netContents", label: "Net contents", placeholder: "e.g. 750 mL", tip: "Unit-normalized, so 750 mL = 750ML = 750 milliliters." },
+  { key: "bottlerInfo", label: "Bottler name & address", placeholder: "e.g. Old Tom Distillery Co., Bardstown, KY", tip: "Name and address of the bottler/producer (optional)." },
+  { key: "countryOfOrigin", label: "Country of origin (imports)", placeholder: "e.g. United States", tip: "Country of origin, mainly for imports (optional)." },
 ] as const;
 
 type ExpectedKey = (typeof FIELDS)[number]["key"];
@@ -48,25 +51,37 @@ async function verifyImage(img: PreparedImage, expected: Partial<Expected>): Pro
 
 export default function Home() {
   return (
-    <main className="min-h-screen">
-      <div className="mx-auto max-w-3xl px-5 py-8">
-        <header className="mb-6 flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">TTB Label Verification</h1>
-            <p className="mt-1 text-muted-foreground">Check an alcohol label against its application in seconds.</p>
-          </div>
-          <ThemeToggle />
-        </header>
-        <Tabs defaultValue="single">
-          <TabsList className="mb-6">
-            <TabsTrigger value="single">Single label</TabsTrigger>
-            <TabsTrigger value="batch">Batch</TabsTrigger>
-          </TabsList>
-          <TabsContent value="single"><SingleMode /></TabsContent>
-          <TabsContent value="batch"><BatchMode /></TabsContent>
-        </Tabs>
-      </div>
-    </main>
+    <TooltipProvider>
+      <main className="relative min-h-screen overflow-hidden">
+        <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+          <div className="absolute -top-40 left-1/2 h-80 w-[46rem] -translate-x-1/2 rounded-full bg-primary/15 blur-3xl" />
+          <div className="absolute -top-24 right-6 h-60 w-60 rounded-full bg-sky-400/10 blur-3xl" />
+        </div>
+        <div className="mx-auto max-w-3xl px-5 py-8">
+          <header className="mb-6 flex items-start justify-between gap-4">
+            <div>
+              <h1 className="bg-gradient-to-br from-foreground to-foreground/60 bg-clip-text text-3xl font-bold tracking-tight text-transparent">
+                TTB Label Verification
+              </h1>
+              <p className="mt-1 text-muted-foreground">Check an alcohol label against its application in seconds.</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <DocsDialog />
+              <ThemeToggle />
+            </div>
+          </header>
+
+          <Tabs defaultValue="single">
+            <TabsList className="mb-6">
+              <TabsTrigger value="single">Single label</TabsTrigger>
+              <TabsTrigger value="batch">Batch</TabsTrigger>
+            </TabsList>
+            <TabsContent value="single"><SingleMode /></TabsContent>
+            <TabsContent value="batch"><BatchMode /></TabsContent>
+          </Tabs>
+        </div>
+      </main>
+    </TooltipProvider>
   );
 }
 
@@ -108,15 +123,21 @@ function SingleMode() {
         </CardHeader>
         <CardContent className="grid gap-3 sm:grid-cols-3">
           {SAMPLES.map((s) => (
-            <button key={s.id} onClick={() => loadSample(s)} disabled={busy}
-              className="group rounded-lg border bg-card p-2 text-left transition hover:border-primary hover:shadow-sm disabled:opacity-50">
-              <div className="relative mb-2 aspect-[3/4] overflow-hidden rounded-md border bg-white">
-                <Image src={s.src} alt={s.name} fill sizes="200px" className="object-contain" />
-              </div>
-              <div className="text-sm font-medium">{s.name}</div>
-              <div className="text-xs text-muted-foreground">{s.type}</div>
-              <div className="mt-1 text-xs text-muted-foreground">{s.hint}</div>
-            </button>
+            <Tooltip key={s.id}>
+              <TooltipTrigger
+                onClick={() => loadSample(s)}
+                disabled={busy}
+                className="group rounded-lg border bg-card p-2 text-left transition hover:border-primary hover:shadow-md disabled:pointer-events-none disabled:opacity-50"
+              >
+                <div className="relative mb-2 aspect-[3/4] overflow-hidden rounded-md border bg-white">
+                  <Image src={s.src} alt={s.name} fill sizes="200px" className="object-contain transition group-hover:scale-[1.03]" />
+                </div>
+                <div className="text-sm font-medium">{s.name}</div>
+                <div className="text-xs text-muted-foreground">{s.type}</div>
+                <div className="mt-1 text-xs text-muted-foreground">{s.hint}</div>
+              </TooltipTrigger>
+              <TooltipContent>Load &amp; verify this sample instantly — no upload</TooltipContent>
+            </Tooltip>
           ))}
         </CardContent>
       </Card>
@@ -124,12 +145,12 @@ function SingleMode() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">1. Application details</CardTitle>
-          <CardDescription>What the applicant says is on the label. Blank fields are skipped.</CardDescription>
+          <CardDescription>What the applicant says is on the label. Blank fields are skipped. Hover a label for details.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
           {FIELDS.map((f) => (
             <div key={f.key} className="grid gap-1.5">
-              <Label htmlFor={f.key}>{f.label}</Label>
+              <Label htmlFor={f.key} title={f.tip} className="w-fit cursor-help">{f.label}</Label>
               <Input id={f.key} value={expected[f.key]} placeholder={f.placeholder}
                 onChange={(e) => setExpected((p) => ({ ...p, [f.key]: e.target.value }))} />
             </div>
@@ -140,7 +161,7 @@ function SingleMode() {
       <Card>
         <CardHeader><CardTitle className="text-base">2. Label image</CardTitle></CardHeader>
         <CardContent>
-          <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed bg-muted/40 px-6 py-8 text-center transition hover:border-primary hover:bg-muted/60">
+          <label title="Upload a label image (JPEG or PNG)" className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed bg-muted/40 px-6 py-8 text-center transition hover:border-primary hover:bg-muted/60">
             <input type="file" accept="image/*" className="sr-only" onChange={(e) => pick(e.target.files?.[0])} />
             {image ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -157,9 +178,16 @@ function SingleMode() {
         </CardContent>
       </Card>
 
-      <Button size="lg" className="w-full" disabled={!image || busy} onClick={() => image && runVerify(image, expected)}>
-        {busy ? "Checking…" : "Verify label"}
-      </Button>
+      <Tooltip>
+        <TooltipTrigger
+          className={cn(buttonVariants({ size: "lg" }), "w-full")}
+          disabled={!image || busy}
+          onClick={() => image && runVerify(image, expected)}
+        >
+          {busy ? "Checking…" : "Verify label"}
+        </TooltipTrigger>
+        <TooltipContent>Read the label with AI and check it against the application details</TooltipContent>
+      </Tooltip>
 
       {error && <p role="alert" className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-destructive">{error}</p>}
       <div aria-live="polite">{result && <ResultView result={result} />}</div>
@@ -273,7 +301,7 @@ function BatchMode() {
           <CardDescription>Upload many labels; each is screened for the Government Warning and field consistency.</CardDescription>
         </CardHeader>
         <CardContent>
-          <label className="inline-flex cursor-pointer items-center gap-2 rounded-md bg-primary px-4 py-2.5 font-medium text-primary-foreground hover:bg-primary/90">
+          <label title="Select multiple label images to screen at once" className="inline-flex cursor-pointer items-center gap-2 rounded-md bg-primary px-4 py-2.5 font-medium text-primary-foreground transition hover:bg-primary/90">
             <Upload className="size-4" />
             <input type="file" accept="image/*" multiple className="sr-only" onChange={(e) => pick(e.target.files)} />
             Choose label images
@@ -282,9 +310,12 @@ function BatchMode() {
         </CardContent>
       </Card>
       {rows.length > 0 && (
-        <Button className="w-full" size="lg" disabled={busy} onClick={run}>
-          {busy ? `Checking… ${done}/${rows.length}` : `Verify all ${rows.length}`}
-        </Button>
+        <Tooltip>
+          <TooltipTrigger className={cn(buttonVariants({ size: "lg" }), "w-full")} disabled={busy} onClick={run}>
+            {busy ? `Checking… ${done}/${rows.length}` : `Verify all ${rows.length}`}
+          </TooltipTrigger>
+          <TooltipContent>Run the warning + consistency check on every image (3 in parallel)</TooltipContent>
+        </Tooltip>
       )}
       {rows.length > 0 && (
         <Card>
