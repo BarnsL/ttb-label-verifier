@@ -3,12 +3,13 @@ import type { ExtractedLabel } from "./types";
 
 /**
  * Model is env-configurable so we can trade latency for accuracy without code
- * changes. The default is Anthropic's fast Haiku vision model, which reads a
- * label well under the TTB 5-second target. Override with ANTHROPIC_MODEL:
- *   claude-sonnet-4-6 — more accurate on poor images, still fast
- *   claude-opus-4-8   — most accurate, ~5s
+ * changes. The default stays accurate on low-resolution real-world photos while
+ * still coming in under the TTB 5-second target. Override with ANTHROPIC_MODEL:
+ *   claude-haiku-4-5 — fastest/cheapest; great on clean labels, but can misread
+ *                      tiny text on poor photos
+ *   claude-opus-4-8  — most accurate on difficult images, ~5s
  */
-export const MODEL = process.env.ANTHROPIC_MODEL || "claude-haiku-4-5";
+export const MODEL = process.env.ANTHROPIC_MODEL || "claude-sonnet-4-6";
 
 const client = new Anthropic(); // reads ANTHROPIC_API_KEY from the environment
 

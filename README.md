@@ -64,13 +64,13 @@ Switch to the **Batch** tab to screen many labels at once. Optionally upload a *
 1. **Read (AI).** Claude vision does perception *only*: it transcribes the label image into structured fields — brand, class/type, alcohol content, net contents, bottler, country, and the full Government Warning text. This is the stage that has to tolerate real-world photos: angle, glare, curved glass, low light.
 2. **Decide (plain code).** Deterministic TypeScript compares each field to the application and renders the verdict — fuzzy match on names, numeric compare on alcohol content, unit-normalized compare on volume, and an exact word-for-word + caps + bold check on the warning.
 
-The verdict never rides on the model "feeling" that two things match — it's testable logic, so the same input always yields the same result and every Pass / Review / Fail is explained field by field. That auditability is the point: a compliance decision has to be consistent and defensible, not a vibe. The model is swappable via `ANTHROPIC_MODEL` to trade accuracy against the ≤ 5-second target (default `claude-haiku-4-5`; `claude-sonnet-4-6` and `claude-opus-4-8` are more accurate on poor images). Full write-up in [docs/APPROACH.md](docs/APPROACH.md); security posture in [SECURITY.md](SECURITY.md).
+The verdict never rides on the model "feeling" that two things match — it's testable logic, so the same input always yields the same result and every Pass / Review / Fail is explained field by field. That auditability is the point: a compliance decision has to be consistent and defensible, not a vibe. The model is swappable via `ANTHROPIC_MODEL` to trade accuracy against the ≤ 5-second target (default `claude-sonnet-4-6`, which stays accurate on low-res real-world photos; `claude-haiku-4-5` is faster/cheaper for clean labels, `claude-opus-4-8` most accurate on poor images). Full write-up in [docs/APPROACH.md](docs/APPROACH.md); security posture in [SECURITY.md](SECURITY.md).
 
 ## How it meets the reviewers' needs
 
 | What reviewers needed | How the app delivers |
 |---|---|
-| **A verdict in ≤ 5 seconds** | One fast vision call (default `claude-haiku-4-5`) with a cached structured-output schema, so there's no per-request compile cost. The model is swappable. |
+| **A verdict in ≤ 5 seconds** | One fast vision call (default `claude-sonnet-4-6`) with a cached structured-output schema, so there's no per-request compile cost. The model is swappable (Haiku for speed, Opus for accuracy). |
 | **Usable by non-technical reviewers** | Two inputs and one button; plain-language, field-by-field results; one-click samples; a tooltip on every field. |
 | **Many labels at once** | A **Batch** tab screens a set of images (three in parallel), with an optional CSV of expected values matched by filename. |
 | **Brand names that are close but not identical** | Fuzzy, case/punctuation-insensitive matching — a near-miss becomes **Review** (human glance), not an automatic **Fail**. |
