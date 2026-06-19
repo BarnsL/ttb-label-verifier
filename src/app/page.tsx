@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Upload } from "lucide-react";
+import { ShieldCheck, Upload } from "lucide-react";
 import type { VerificationResult, FieldResult, FieldStatus } from "@/lib/types";
 import { prepareImage, type PreparedImage } from "@/lib/image";
 import { buttonVariants } from "@/components/ui/button";
@@ -56,16 +56,20 @@ export default function Home() {
     <TooltipProvider>
       <main className="relative min-h-screen overflow-hidden">
         <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-          <div className="absolute -top-40 left-1/2 h-80 w-[46rem] -translate-x-1/2 rounded-full bg-primary/15 blur-3xl" />
-          <div className="absolute -top-24 right-6 h-60 w-60 rounded-full bg-sky-400/10 blur-3xl" />
+          <div className="absolute -top-32 left-1/2 h-72 w-[42rem] -translate-x-1/2 rounded-full bg-indigo-500/25 blur-[100px]" />
+          <div className="absolute -top-16 right-0 h-72 w-[32rem] rounded-full bg-violet-500/20 blur-[100px]" />
+          <div className="absolute top-48 left-1/3 h-64 w-[40rem] -translate-x-1/2 rounded-full bg-sky-400/10 blur-[120px]" />
         </div>
         <div className="mx-auto max-w-3xl px-5 py-8">
-          <header className="mb-6 flex items-start justify-between gap-4">
-            <div>
-              <h1 className="bg-gradient-to-br from-foreground to-foreground/60 bg-clip-text text-3xl font-bold tracking-tight text-transparent">
-                TTB Label Verification
-              </h1>
-              <p className="mt-1 text-muted-foreground">Check an alcohol label against its application in seconds.</p>
+          <header className="mb-8 flex items-start justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-lg shadow-indigo-500/25">
+                <ShieldCheck className="size-6" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">TTB Label Verification</h1>
+                <p className="mt-0.5 text-sm text-muted-foreground">Check an alcohol label against its application in seconds.</p>
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <Link href="/grade" title="Open the reviewer grading rubric" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
