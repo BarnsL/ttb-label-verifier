@@ -2,13 +2,13 @@ import Anthropic from "@anthropic-ai/sdk";
 import type { ExtractedLabel } from "./types";
 
 /**
- * Model is env-configurable so we can trade accuracy for latency without code
- * changes. The default is a fast, accurate model that meets the TTB 5-second
- * target. Override with ANTHROPIC_MODEL:
- *   claude-opus-4-8   — most accurate on poor images (~5s)
- *   claude-haiku-4-5  — fastest, lowest cost
+ * Model is env-configurable so we can trade latency for accuracy without code
+ * changes. The default is Anthropic's fast Haiku vision model, which reads a
+ * label well under the TTB 5-second target. Override with ANTHROPIC_MODEL:
+ *   claude-sonnet-4-6 — more accurate on poor images, still fast
+ *   claude-opus-4-8   — most accurate, ~5s
  */
-export const MODEL = process.env.ANTHROPIC_MODEL || "claude-sonnet-4-6";
+export const MODEL = process.env.ANTHROPIC_MODEL || "claude-haiku-4-5";
 
 const client = new Anthropic(); // reads ANTHROPIC_API_KEY from the environment
 

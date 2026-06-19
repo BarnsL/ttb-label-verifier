@@ -38,6 +38,8 @@ const SAMPLES: { id: string; name: string; type: string; src: string; hint: stri
     expect: { brandName: "CRIMSON VALE", classType: "Cabernet Sauvignon", alcoholContent: "13.5% Alc./Vol.", netContents: "750 mL", bottlerInfo: "Crimson Vale Winery, Napa, California" } },
   { id: "vodka", name: "Silver Birch", type: "Vodka", src: "/samples/vodka.png", hint: "Warning not ALL-CAPS → Fail",
     expect: { brandName: "SILVER BIRCH", classType: "Vodka", alcoholContent: "40% Alc./Vol. (80 Proof)", netContents: "750 mL", bottlerInfo: "Silver Birch Spirits, Austin, Texas" } },
+  { id: "sake", name: "Sho Chiku Bai", type: "Sake · real photo", src: "/samples/sake.png", hint: "Real bottle photo · warning on back",
+    expect: { brandName: "Sho Chiku Bai", classType: "Sake", alcoholContent: "15% Alc./Vol.", netContents: "375 mL" } },
 ];
 
 async function verifyImage(img: PreparedImage, expected: Partial<Expected>): Promise<VerificationResult> {
@@ -139,7 +141,7 @@ function SingleMode() {
           <CardTitle className="text-base">Try a sample — one click, no upload</CardTitle>
           <CardDescription>Pre-loads a label and its application, then runs the check.</CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-3 sm:grid-cols-3">
+        <CardContent className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {SAMPLES.map((s) => (
             <Tooltip key={s.id}>
               <TooltipTrigger
