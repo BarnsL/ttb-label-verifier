@@ -6,7 +6,7 @@ export default defineConfig({
     // Run in Node — no DOM needed for pure lib functions.
     environment: "node",
     // Report a nice summary table plus spec-style descriptions.
-    reporter: "verbose",
+    reporters: "verbose",
     // Collect V8 coverage when `npm run test:cov` is invoked.
     coverage: {
       provider: "v8",
