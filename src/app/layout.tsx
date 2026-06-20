@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Geist_Mono } from "next/font/google";
+import { ViewTransition } from "react";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
@@ -47,7 +48,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           {/* Age gate: must confirm 21+ before accessing alcohol label content */}
           <AgeGate />
-          {children}
+          {/* ViewTransition drives the blur+scale page crossfade in globals.css */}
+          <ViewTransition name="page-body">{children}</ViewTransition>
           <Toaster />
           {/* CCPA cookie-consent banner; shown once until user makes a choice */}
           <CookieBanner />
